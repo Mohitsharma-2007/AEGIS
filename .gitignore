@@ -52,6 +52,10 @@ venv/
 # --- Runtime data and databases --------------------------------------------
 .aegis-data/
 data/
+# Agent-to-agent mailbox traffic. The daemon writes it under
+# `.aegis-data/agent-swarm/mailboxes/`; a stray copy at the repo root is
+# conversation state, not source.
+agent-swarm/mailboxes/
 *.sqlite
 *.sqlite3
 *.sqlite-wal
