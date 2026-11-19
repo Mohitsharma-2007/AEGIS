@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "concurrently -k \"cross-env NODE_ENV=development WHATSAPP_OWNER_GRACE_MS=8000 node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=../../.env.local --import tsx --watch src/server/index.ts\" \"vite\"",
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && vite build && tsc -p tsconfig.server.json",
+    "build": "node scripts/build-sightline.mjs && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && vite build && tsc -p tsconfig.server.json",
+    "build:sightline": "node scripts/build-sightline.mjs --force",
     "start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=../../.env.local dist/server/server/index.js",
     "browser": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=../../.env.local --import tsx src/browser/index.ts",
     "browser:start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=../../.env.local dist/server/browser/index.js",

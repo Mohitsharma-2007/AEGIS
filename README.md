@@ -1,73 +1,115 @@
-> **Historical note:** OpenCode was removed from Aegis. The task-execution
-> harness is the in-process native engine (`apps/host/src/server/harness.ts`);
-> any OpenCode description below is a record of the old architecture.
-
 # Aegis
 
-A local-first desktop agent: **Aegis host** (UI + agent runtime, now
-`apps/host`), the **Aegis daemon** (memory/services, `services/daemon`),
-the **Playwright browser service** (AEGIS Computer browser), and an
-**Electron desktop shell** (`apps/desktop`) with tray, mascot and widgets.
-Upstream pieces were modified in place; see `docs/MODIFICATIONS.md` for the
-change log and `docs/BUILD_REPORT.md` for architecture, integration state
-and test results. Licences: `docs/THIRD_PARTY.md`.
-
-## Quick start
+A local-first desktop agent. Everything runs on your machine: the agent
+runtime, the memory service, the browser, and the voice pipeline. You bring
+a model key and Aegis brings the rest.
 
 ```sh
-cp .env.example .env.local   # add at least one provider key, e.g. OPENROUTER_API_KEY
-./start.sh                   # or: ./start.sh --dev
-# Windows: start.ps1 / start.bat
+cp .env.example .env.local     # add one provider key, e.g. OPENROUTER_API_KEY
+./start.sh                     # Windows: start.ps1 (or start.bat)
 ```
 
-Open http://127.0.0.1:4310 (dev mode: http://127.0.0.1:5173).
+The UI opens at <http://127.0.0.1:4310>.
 
-Desktop app:
+## What you get
+
+| Surface | What it does |
+|---|---|
+| **Conversation** | Chat with the agent. Type `/` for commands, `@` to hand a task to a specific agent. Attachments, voice, and the computer pane all live here. |
+| **Agents** | The agent team, their state and their work in progress. |
+| **Harness** | The execution engine, separate from the chat: its own sessions, its own approval gate for shell/Node/Python commands. |
+| **Files** | The workspace filesystem, with previews. |
+| **Memory** | What the daemon remembers — STAIR, retrieval and the knowledge graph. |
+| **Research** | Web research that returns sources rather than a wall of text. |
+| **Finance** | Live market quotes and charts. |
+| **3D Library** | Labelled 3D models and their 2D diagrams, with the parts annotated. |
+| **Integrations** | Connections, plugins and the marketplace. |
+
+Two more surfaces are not in the rail because they are not destinations:
+the **AEGIS Computer** (the Playwright browser) opens from the header into a
+chat-side pane so controlling it never takes you away from the thread that
+asked for it, and **Settings** carries providers, models, voice and appearance.
+
+## The pieces
+
+| Piece | Port | Notes |
+|---|---|---|
+| Aegis host — UI + agent runtime | 4310 (dev UI 5173) | `apps/host` |
+| Aegis daemon — memory, tools, MCP | 8765 | `services/daemon` |
+| Voice pipeline — STT + TTS | 8766 | faster-whisper + Piper, `services/daemon/aegis_daemon/voice_pipeline.py` |
+| AEGIS Computer browser — Playwright | 4311 | needs `BROWSER_SECRET` |
+| WhatsApp bridge | 4312 | optional |
+| Electron desktop shell | — | `apps/desktop`: tray, Notch, widgets, visual layer |
+
+`start.sh` / `start.ps1` supervise all of them and restart what dies; you
+rarely run the individual processes by hand. Use `--dev` (`-Dev` on Windows)
+for the Vite dev server with hot reload on :5173.
+
+## Models
+
+Endpoints are fixed in `apps/host/src/server/providers.ts`, so you never type
+an endpoint — only a key. Supported: OpenRouter, Groq, NVIDIA NIM, Conduit,
+TokenHarbor, Vercel AI Gateway, and a local model server (Ollama or LM Studio).
+Pick the provider and model in **Settings**, or set `AEGIS_PROVIDER` /
+`AEGIS_MODEL` in `.env.local`.
+
+Anything that needs a key lives in `.env.local` (or the process environment).
+`.env.example` lists every variable with blank values; it is the only
+environment file in the repository.
+
+## Voice
+
+The voice pipeline is local, not a hosted API: faster-whisper for speech to
+text and Piper for text to speech, on :8766. The Notch is the desktop front
+end for it — say "Hey Aegis" (enable the wake word in Settings) or press
+<kbd>Alt</kbd>+<kbd>Space</kbd> to summon it, and its mic starts the call.
+
+Without the pipeline running, voice can fall back to a hosted
+OpenAI-compatible endpoint via `VOICE_BASE_URL` / `VOICE_API_KEY` /
+`VOICE_MODEL`.
+
+## Desktop app
 
 ```sh
 cd apps/desktop && npm start
 ```
 
-No CopilotKit Intelligence account is needed: the agent runtime runs
-locally against the provider registry. If you *have* an Intelligence key
-(`CPK_INTELLIGENCE_API_KEY`), the upstream hosted mode still works.
+The Electron shell adds the Notch, tray, desktop mascot and the visual layer
+(<kbd>Super</kbd>/<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>). It is a
+thin client over the same host on :4310 — nothing in it runs a second agent.
 
-## Providers (OpenCode-style)
-
-Endpoints are hard-coded in `apps/host/src/server/providers.ts` — you
-never type an endpoint. Supply a key via ENV for one or more of:
-OpenRouter, Groq, NVIDIA NIM, Conduit, TokenHarbor, Vercel AI Gateway.
-Pick the active provider + model in the app's **Settings** dialog, or
-set `AEGIS_PROVIDER` / `AEGIS_MODEL` in `.env.local`.
-
-## Pieces
-
-| Piece | Port | Notes |
-|---|---|---|
-| Aegis host (UI + API) | 4310 (dev UI 5173) | `cd apps/host && npm run dev` |
-| Aegis daemon | 8765 | memory (STAIR/RAG/Graph), tools, MCP stdio server; `services/daemon/` |
-| Aegis browser service (Playwright) | 4311 | the AEGIS Computer browser; `cd apps/host && npm run browser` (needs `BROWSER_SECRET`) |
-| Electron desktop shell | — | `cd apps/desktop && npm start` (tray, mascot, widgets) |
-
-## Tests
+## Development
 
 ```sh
-cd apps/host && npm run typecheck && npm run build && npm test
+cd apps/host && npm run dev      # host + Vite
+cd apps/host && npm run typecheck
+cd apps/host && npm test
+```
+
+`npm run build` also builds the 3D Library viewer from `apps/sightline` into
+`apps/host/public/sightline`; run `npm run build:sightline` to force a rebuild
+of just that piece.
+
+Tests for the daemon and the wiring between processes:
+
+```sh
 node tests/boot-test.mjs
 services/daemon/.venv/bin/python tests/smoke_daemon.py
 services/daemon/.venv/bin/python tests/test_mcp_roundtrip.py
-python3 tests/test_daemon_link.py
 ```
 
-## Mascot, widgets & sounds
+## Layout
 
-The Aegis mascot kit lives in `vendor/mascot-kit` and is installed as
-`aegis-mascot`. Seven crew mascots (Aegi, Posty, Chatty, Filo, Memo,
-Rig, Guard) drive the desktop pet, tray, pill and panel widgets. See
-`vendor/mascot-kit/INTEGRATION.md` for the full integration brief.
+```
+apps/host        UI (React) + agent runtime + HTTP API
+apps/desktop     Electron shell: Notch, tray, widgets, visual layer
+apps/sightline   screen-to-scene visual engine (2D diagrams, 3D models)
+services/daemon  memory, tools, MCP server, voice pipeline
+vendor/          vendored pieces, e.g. the mascot kit
+```
 
-## Voice
+## Licence
 
-Voice calls use the provider configured by `VOICE_API_KEY` /
-`VOICE_MODEL` / `VOICE_NAME`. Local STT/TTS (whisper.cpp, piper) is not
-yet wired; set these to an OpenAI-compatible endpoint for now.
+MIT. Upstream components and their licences are listed in
+`docs/THIRD_PARTY.md`; changes to vendored pieces are recorded in
+`docs/MODIFICATIONS.md`.
