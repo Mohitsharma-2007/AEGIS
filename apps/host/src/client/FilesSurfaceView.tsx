@@ -551,7 +551,7 @@ export function FilesSurfaceView({ initialFiles }: FilesSurfaceProps = {}) {
                   <div style={{ background: '#000', padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
                     <video
                       src={selectedFile.downloadUrl}
-                      alt={selectedFile.name}
+                      aria-label={`Preview of ${selectedFile.name}`}
                       controls
                       style={{
                         display: 'block',
@@ -574,7 +574,7 @@ export function FilesSurfaceView({ initialFiles }: FilesSurfaceProps = {}) {
                       background: '#fff',
                     }}
                   />
-                ) : (preview.kind === 'doc' || preview.kind === 'office' || preview.kind === 'ppt' || preview.kind === 'xls') && selectedFile.downloadUrl ? (
+                ) : preview.kind === 'office' && selectedFile.downloadUrl ? (
                   <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
                     <iframe
                       title={`Preview of ${selectedFile.name}`}

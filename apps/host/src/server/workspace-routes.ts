@@ -388,6 +388,22 @@ export function workspaceRoutes(platform: Platform, voice: VoiceService) {
     }
     return c.json(platform.workspace.updateDot(c.req.param('id'), data.data));
   });
+  // Deleting an Agent removes it and the conversations it owned. The primary
+  // Aegis orchestrator is the workspace itself, so it cannot be removed.
+  app.delete('/dots/:id', (c) => {
+    const dot = platform.workspace.dot(c.req.param('id'));
+    if (!dot) return c.json({ error: 'Agent not found.' }, 404);
+    const primary =
+      platform.workspace.dots().find((item) => !item.surface) ??
+      platform.workspace.dots()[0];
+    if (primary && primary.id === dot.id)
+      return c.json(
+        { error: 'The primary Aegis Agent cannot be deleted.' },
+        409,
+      );
+    platform.workspace.deleteDot(dot.id);
+    return c.json({ ok: true });
+  });
   app.post('/conversations', async (c) => {
     const data = z
       .object({

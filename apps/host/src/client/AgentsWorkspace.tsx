@@ -4,14 +4,14 @@ import {
   Brain,
   FlaskConical,
   FolderOpen,
-  GitGraph,
   Loader2,
   Mail,
   Monitor,
+  Plus,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   Users,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import type { Dot } from '../shared/types';
@@ -22,7 +22,6 @@ import {
   type SwarmAgentInfo,
 } from './api';
 import { AgentMailPanel, AgentSendComposer } from './AgentMailPanel';
-import { HarnessPanel } from './HarnessPanel';
 import { api } from './api';
 
 const AGENT_ICONS: Record<SwarmAgentId, LucideIcon> = {
@@ -42,20 +41,6 @@ function TeamCard({
   configured: boolean;
 }) {
   const Icon = AGENT_ICONS[agent.id];
-  const [deleting, setDeleting] = useState(false);
-
-  const deleteAgent = async () => {
-    if (!confirm(`Delete agent "${agent.name}"?`)) return;
-    setDeleting(true);
-    try {
-      await api(`/agents/tasks/${agent.id}`, 'DELETE');
-      void refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Delete failed.');
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   return (
     <article className="ag-team-card">
@@ -80,17 +65,74 @@ function TeamCard({
       <footer>
         <span>{agent.kind === 'orchestrator' ? 'Orchestrator' : 'Specialist'}</span>
         {agent.model && <span>{agent.model}</span>}
-        <button
-          type="button"
-          className="ag-delete-btn"
-          onClick={deleteAgent}
-          disabled={deleting}
-          aria-label={`Delete ${agent.name}`}
-          title="Delete agent"
-        >
-          {deleting ? <Loader2 size={12} className="ag-spin" /> : <X size={14} />}
-        </button>
       </footer>
+    </article>
+  );
+}
+
+/** One workspace Agent (a `dot`). Deleting it also deletes its conversations. */
+function WorkspaceAgentCard({
+  dot,
+  primary,
+  onDelete,
+}: {
+  dot: Dot;
+  primary: boolean;
+  onDelete: (dot: Dot) => Promise<void>;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  const remove = async () => {
+    if (
+      !confirm(
+        `Delete "${dot.name}"? Its conversations are deleted too. This cannot be undone.`,
+      )
+    )
+      return;
+    setDeleting(true);
+    try {
+      await onDelete(dot);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <article className="ag-ws-card">
+      <div className="ag-ws-head">
+        <span className="ag-ws-avatar" aria-hidden="true">
+          {dot.name.trim().charAt(0).toUpperCase()}
+        </span>
+        <div>
+          <strong>{dot.name}</strong>
+          <small>{primary ? 'Primary orchestrator' : 'Workspace Agent'}</small>
+        </div>
+        {primary ? (
+          <span className="ag-ws-lock" title="The primary Agent cannot be deleted">
+            Primary
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="ag-delete-btn"
+            onClick={() => void remove()}
+            disabled={deleting}
+            aria-label={`Delete ${dot.name}`}
+            title={`Delete ${dot.name}`}
+          >
+            {deleting ? (
+              <Loader2 size={12} className="ag-spin" />
+            ) : (
+              <Trash2 size={14} />
+            )}
+          </button>
+        )}
+      </div>
+      <p>{dot.instructions || 'No instructions yet.'}</p>
+      <div className="ag-ws-flags">
+        <span className={dot.researchAllowed ? 'on' : 'off'}>Research</span>
+        <span className={dot.memoryAllowed ? 'on' : 'off'}>Memory</span>
+      </div>
     </article>
   );
 }
@@ -98,12 +140,15 @@ function TeamCard({
 export function AgentsWorkspace({
   dot,
   dots,
+  onOpenHarness,
 }: {
   dot: Dot;
   dots: Dot[];
+  /** The Harness is its own surface now; this link switches to it. */
+  onOpenHarness: () => void;
 }) {
   const [data, setData] = useState<AgentsResponse>();
-  const [tab, setTab] = useState<'queries' | 'team' | 'harness'>('queries');
+  const [tab, setTab] = useState<'queries' | 'team' | 'workspace'>('team');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -129,8 +174,23 @@ export function AgentsWorkspace({
     return () => window.clearInterval(timer);
   }, [refresh]);
 
+  const deleteWorkspaceAgent = useCallback(
+    async (target: Dot) => {
+      try {
+        await api(`/dots/${encodeURIComponent(target.id)}`, 'DELETE');
+        setError('');
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Delete failed.');
+      }
+      await refresh();
+    },
+    [refresh],
+  );
+
   const agents = data?.agents ?? [];
   const active = data?.active;
+  const primary = dots.find((item) => !item.surface) ?? dots[0];
+  const specialists = dots.filter((item) => item.id !== primary?.id);
 
   return (
     <main className="main-content agents-workspace">
@@ -139,10 +199,9 @@ export function AgentsWorkspace({
           <span className="eyebrow">AGENT ORCHESTRATION</span>
           <h1>Agents</h1>
           <p>
-            The orchestrator communicates with each agent through internal
-            markdown mail. Queries and replies are threads in the Mail surface;
-            the Harness tab shows the native execution engine's capabilities.
-            {dots.length} workspace Agent{dots.length === 1 ? '' : 's'} available.
+            The orchestrator talks to each agent through internal markdown mail.
+            Queries and replies are threads in the Mail surface; the Harness is
+            its own page in the rail.
           </p>
         </div>
         <div className="ag-runtime-state">
@@ -153,7 +212,9 @@ export function AgentsWorkspace({
                 ? `${active.provider ?? 'Provider'}${active.model ? ` · ${active.model}` : ''}`
                 : 'No model provider'}
             </strong>
-            <small>{active ? `${active.running} running · ${active.queued} queued` : 'Checking runtime'}</small>
+            <small>
+              {active ? `${active.running} running · ${active.queued} queued` : 'Checking runtime'}
+            </small>
           </div>
           <button
             type="button"
@@ -176,15 +237,6 @@ export function AgentsWorkspace({
         <button
           type="button"
           role="tab"
-          aria-selected={tab === 'queries'}
-          className={tab === 'queries' ? 'active' : ''}
-          onClick={() => setTab('queries')}
-        >
-          <Mail size={15} /> Queries
-        </button>
-        <button
-          type="button"
-          role="tab"
           aria-selected={tab === 'team'}
           className={tab === 'team' ? 'active' : ''}
           onClick={() => setTab('team')}
@@ -195,11 +247,29 @@ export function AgentsWorkspace({
         <button
           type="button"
           role="tab"
-          aria-selected={tab === 'harness'}
-          className={tab === 'harness' ? 'active' : ''}
-          onClick={() => setTab('harness')}
+          aria-selected={tab === 'workspace'}
+          className={tab === 'workspace' ? 'active' : ''}
+          onClick={() => setTab('workspace')}
         >
-          <GitGraph size={15} /> Harness
+          <Bot size={15} /> Workspace
+          <span>{dots.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'queries'}
+          className={tab === 'queries' ? 'active' : ''}
+          onClick={() => setTab('queries')}
+        >
+          <Mail size={15} /> Queries
+        </button>
+        <button
+          type="button"
+          className="ag-tab-link"
+          onClick={onOpenHarness}
+          title="Open the Harness execution engine"
+        >
+          Harness →
         </button>
       </div>
 
@@ -217,8 +287,42 @@ export function AgentsWorkspace({
             />
           ))}
         </div>
-      ) : tab === 'harness' ? (
-        <HarnessPanel />
+      ) : tab === 'workspace' ? (
+        <>
+          <div className="ag-workspace-head">
+            <h2>Workspace Agents</h2>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent('aegis:new-agent', {
+                    detail: { spaceId: dot.spaceId },
+                  }),
+                )
+              }
+            >
+              <Plus size={14} /> New Agent
+            </button>
+          </div>
+          {primary && (
+            <div className="ag-team-grid">
+              <WorkspaceAgentCard
+                dot={primary}
+                primary
+                onDelete={deleteWorkspaceAgent}
+              />
+              {specialists.map((item) => (
+                <WorkspaceAgentCard
+                  key={item.id}
+                  dot={item}
+                  primary={false}
+                  onDelete={deleteWorkspaceAgent}
+                />
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <>
           <AgentSendComposer

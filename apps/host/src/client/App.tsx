@@ -10,7 +10,6 @@ import {
   Bot,
   Clock3,
   FlaskConical,
-  HeartHandshake,
   Menu,
   MessageCircle,
   Mic,
@@ -30,6 +29,8 @@ import {
   Brain,
   Boxes,
   Sparkles,
+  Terminal as TerminalIcon,
+  TrendingUp,
   X,
 } from 'lucide-react';
 import type {
@@ -74,32 +75,32 @@ import { ComputerPanel } from './ComputerPanel';
 import { ServicesStatus } from './ServicesStatus';
 import { ResearchPanel } from './ResearchPanel';
 import { AgentsWorkspace } from './AgentsWorkspace';
-import { CompanionPanel } from './CompanionPanel';
+import { HarnessPanel } from './HarnessPanel';
 import { SightlineView } from './SightlineView';
 import { SettingsForm } from './SettingsForm';
 import { MemoryPanel } from './MemoryPanel';
 import { InlineVoiceBar } from './InlineVoiceBar';
 import { FilesSurfaceView } from './FilesSurfaceView';
 import { PenBoardPanel } from './PenBoardPanel';
-import { WidgetsPanel, type DesktopStatus, type DesktopWidgets } from './WidgetsPanel';
+// The widget gallery render branch was unreachable (no rail entry), so only the
+// shared payload types remain: the desktop broadcast below still mirrors them.
+import type { DesktopStatus, DesktopWidgets } from './WidgetsPanel';
 import { ActivityView } from './ActivityView';
 import { IntegrationsView } from './IntegrationsView';
 import { WhatsAppCard } from './WhatsAppCard';
 import { AgentOnboardingModal, type EncryptedVaultRecord } from './AgentOnboardingModal';
 import { submitComposerOnEnter } from './chat-composer';
 import { adoptServerSoundPreference, playCue } from './sounds';
-import { AnnotationEngine } from './AnnotationEngine';
 import { FinancePage } from './FinancePage';
 
 // Breadcrumb titles for every view. The old chain fell through to "Memory"
-// for Files, Terminal, Research, Connections, Agents and Companion.
+// for Files, Terminal, Research, Connections, Agents and the Harness.
 const VIEW_TITLES: Record<string, string> = {
   chat: 'Conversation',
   tasks: 'Activity',
   space: 'Pages',
   computer: 'Computer',
   browser: 'Browser',
-  harness: 'Activity',
   memories: 'Memory',
   ops: 'Operations',
   integrations: 'Integrations',
@@ -107,10 +108,9 @@ const VIEW_TITLES: Record<string, string> = {
   files: 'Files',
   research: 'Research',
   agents: 'Agents',
-  companion: 'Companion',
+  harness: 'Harness',
   finance: 'Finance',
-  sightline: 'Visual Studio',
-  widgets: 'Widgets',
+  sightline: '3D Library',
 }
 // Width of the fixed icon rail. The sidebar starts right after it and the
 // workspace margin must equal rail + sidebar width, or the panels overlap.
@@ -129,12 +129,15 @@ const RAIL_WIDTH = 52;
 const SURFACE_VIEWS = [
   { id: 'chat', label: 'Conversation', icon: MessageCircle },
   { id: 'agents', label: 'Agents', icon: Bot },
+  // The Harness is the execution engine with its own sessions and approval
+  // gate, so it gets its own rail entry instead of hiding as a tab in Agents.
+  { id: 'harness', label: 'Harness', icon: TerminalIcon },
   { id: 'files', label: 'Files', icon: FolderOpen },
   { id: 'memories', label: 'Memory', icon: Brain },
   { id: 'research', label: 'Research', icon: FlaskConical },
+  { id: 'finance', label: 'Finance', icon: TrendingUp },
+  { id: 'sightline', label: '3D Library', icon: Boxes },
   { id: 'integrations', label: 'Integrations', icon: PlugZap },
-  { id: 'companion', label: 'Companion', icon: HeartHandshake },
-  { id: 'sightline', label: 'Visual Studio', icon: Boxes },
 ] as const;
 
 function describeFailure(error: unknown, fallback: string) {
@@ -184,7 +187,8 @@ export function App() {
     | 'research'
     | 'connections'
     | 'agents'
-    | 'companion'
+    | 'harness'
+    | 'finance'
     | 'integrations'
     | 'sightline'
   >('chat');
@@ -251,7 +255,11 @@ export function App() {
       rawSetView('integrations');
       return;
     }
-    if (detail === 'harness' || detail === 'tasks' || detail === 'activity') {
+    if (detail === 'harness') {
+      rawSetView('harness');
+      return;
+    }
+    if (detail === 'tasks' || detail === 'activity') {
       rawSetView('tasks');
       return;
     }
@@ -269,7 +277,7 @@ export function App() {
     const target = SURFACE_VIEWS.find((item) => item.id === detail);
     if (target) rawSetView(target.id);
   }, [rawSetView, setIntegrationsTab, setPane]);
-  useEffect(() => {
+    useEffect(() => {
     window.addEventListener('aegis:nav', onNav);
     return () => window.removeEventListener('aegis:nav', onNav);
   }, [onNav]);
@@ -460,6 +468,20 @@ export function App() {
   const [auth, setAuth] = useState('');
   const [needsAuth, setNeedsAuth] = useState(false);
   const [dialog, setDialog] = useState<Dialog>();
+  // The Agents workspace's "New Agent" button opens the same create-Agent
+  // dialog the sidebar's + uses, so there is one creation path, not two.
+  useEffect(() => {
+    const onCreateAgent = (event: Event) => {
+      const detail = (event as CustomEvent<{ spaceId?: string }>).detail;
+      rawSetView('agents');
+      setDialog({
+        type: 'dot',
+        spaceId: detail?.spaceId ?? workspace?.spaces[0]?.id ?? '',
+      });
+    };
+    window.addEventListener('aegis:new-agent', onCreateAgent);
+    return () => window.removeEventListener('aegis:new-agent', onCreateAgent);
+  }, [rawSetView, workspace]);
   const [mobile, setMobile] = useState(false);
 // The collapse is transient on non-chat surfaces (full-width pages), but the
 // owner's preference is restored when coming back to the conversation/pages.
@@ -867,13 +889,13 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
       }
       if (action === 'voice-command') {
         const command = String((data as { command?: unknown } | undefined)?.command ?? '').toLowerCase();
-        const route = command.match(/\b(?:open|show|go to)\s+(chat|computer|browser|settings|files|memory|memories|research|reference|directory|terminal|tasks|integrations|tools|companion|agents|whatsapp)\b/);
+        const route = command.match(/\b(?:open|show|go to)\s+(chat|computer|browser|settings|files|memory|memories|research|reference|directory|terminal|tasks|integrations|tools|harness|finance|agents|whatsapp)\b/);
         const views: Record<string, typeof view> = {
           chat: 'chat', computer: 'computer', browser: 'browser', settings: 'settings',
           files: 'files', memory: 'memories', memories: 'memories', research: 'research',
           reference: 'agents', directory: 'agents', ecosystem: 'agents',
           terminal: 'terminal', tasks: 'tasks', integrations: 'integrations', tools: 'tools',
-          companion: 'companion', agents: 'agents', whatsapp: 'chat',
+          harness: 'harness', finance: 'finance', agents: 'agents', whatsapp: 'chat',
         };
         if (route?.[2] && views[route[2]]) {
           setView(views[route[2]]);
@@ -1253,7 +1275,7 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
             />
           ))}
         </nav>
-        {configured && !['companion', 'integrations', 'research', 'memories'].includes(view) ? (
+        {configured && !['integrations', 'research', 'memories', 'harness', 'finance', 'sightline'].includes(view) ? (
           <ThreadList
             dotId={dot.id}
             dots={workspace.dots}
@@ -1718,13 +1740,6 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
       }
     />
           </main>
-        ) : view === 'widgets' ? (
-          <WidgetsPanel
-            widgets={desktopWidgets}
-            status={desktopStatus}
-            paused={state.settings.paused}
-            onTogglePause={togglePause}
-          />
         ) : view === 'files' ? (
           <main className="main-content">
             <FilesSurfaceView />
@@ -1732,9 +1747,13 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
         ) : view === 'research' ? (
           <ResearchPanel />
         ) : view === 'agents' ? (
-          <AgentsWorkspace dot={dot} dots={workspace.dots} />
-        ) : view === 'companion' ? (
-          <CompanionPanel state={state} />
+          <AgentsWorkspace
+            dot={dot}
+            dots={workspace.dots}
+            onOpenHarness={() => setView('harness')}
+          />
+        ) : view === 'harness' ? (
+          <HarnessPanel />
         ) : view === 'finance' ? (
           <FinancePage />
         ) : view === 'sightline' ? (

@@ -245,7 +245,6 @@ const NAV_COMMANDS: Record<string, string> = {
   browser: 'computer',
   files: 'files',
   research: 'research',
-  companion: 'companion',
   tools: 'integrations',
   whatsapp: 'whatsapp',
   marketplace: 'integrations',
@@ -260,13 +259,14 @@ const NAV_COMMANDS: Record<string, string> = {
   agent: 'agents',
   activity: 'tasks',
   tasks: 'tasks',
-  harness: 'tasks',
+  harness: 'harness',
+  finance: 'finance',
   ops: 'tasks',
 };
 
 const SLASH_HELP =
 
-  'Commands: /call <widget>   /rate <agent> <task>   /agent <agent> <task>   /summary   /voice   /draw <topic>   /whiteboard   /settings   /files   /research   /agents   /memory   /computer   /terminal   /integrations   /tools   /whatsapp   /companion   /harness   /help';
+  'Commands: /call <widget>   /rate <agent> <task>   /agent <agent> <task>   /summary   /voice   /draw <topic>   /whiteboard   /settings   /files   /research   /agents   /memory   /computer   /terminal   /integrations   /tools   /whatsapp   /harness   /finance   /help';
 
 
 

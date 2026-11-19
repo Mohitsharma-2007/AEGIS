@@ -10,6 +10,13 @@ import { z } from 'zod';
  * live evidence the Research surface shows, instead of a separate mock.
  */
 
+export interface FinanceSeriesPoint {
+  /** Epoch milliseconds (UTC) of the bar. */
+  t: number;
+  /** Close price for the bar. */
+  c: number;
+}
+
 export interface FinanceQuote {
   symbol: string;
   name: string;
@@ -24,6 +31,14 @@ export interface FinanceQuote {
   volume: number | null;
   exchange: string;
   updatedAt: string;
+  /** The range the caller asked for, echoed back so the chart labels match. */
+  range: string;
+  /**
+   * The real close series Yahoo returned for that range. The chart draws this
+   * and nothing else: no interpolation and no generated noise, so the line on
+   * screen is the same data the quote came from.
+   */
+  series: FinanceSeriesPoint[];
 }
 
 export interface NewsArticle {
@@ -72,20 +87,50 @@ export function parseRss(xml: string): NewsArticle[] {
   return items.slice(0, 12);
 }
 
+export const FINANCE_RANGES = ['1d', '5d', '1mo', '6mo', '1y', '5y'] as const;
+export type FinanceRange = (typeof FINANCE_RANGES)[number];
+
+/** Yahoo wants a finer interval for the very short ranges or the series is empty. */
+function intervalFor(range: FinanceRange): string {
+  if (range === '1d') return '5m';
+  if (range === '5d') return '30m';
+  return '1d';
+}
+
 export async function fetchFinanceQuote(
   symbol: string,
+  range: FinanceRange = '1mo',
 ): Promise<FinanceQuote> {
   type YahooResponse = {
     chart?: {
+      error?: { description?: string } | null;
       result?: Array<{
         meta?: Record<string, unknown>;
+        timestamp?: number[];
+        indicators?: { quote?: Array<{ close?: Array<number | null> }> };
       }>;
     };
   };
   const data = (await fetchJson(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${intervalFor(range)}&range=${range}`,
   )) as YahooResponse;
-  const meta = data.chart?.result?.[0]?.meta ?? {};
+  const result = data.chart?.result?.[0];
+  if (!result) {
+    throw new Error(
+      data.chart?.error?.description ??
+        `Yahoo Finance returned no data for "${symbol}".`,
+    );
+  }
+  const meta = result.meta ?? {};
+  const stamps = result.timestamp ?? [];
+  const closes = result.indicators?.quote?.[0]?.close ?? [];
+  const series: FinanceSeriesPoint[] = [];
+  for (let index = 0; index < stamps.length; index += 1) {
+    const close = closes[index];
+    if (typeof close !== 'number' || !Number.isFinite(close)) continue;
+    if (typeof stamps[index] !== 'number') continue;
+    series.push({ t: stamps[index] * 1000, c: close });
+  }
   const price =
     typeof meta.regularMarketPrice === 'number' ? meta.regularMarketPrice : null;
   const previousClose =
@@ -117,6 +162,8 @@ export async function fetchFinanceQuote(
       typeof meta.regularMarketVolume === 'number' ? meta.regularMarketVolume : null,
     exchange: String(meta.exchangeName ?? ''),
     updatedAt: new Date().toISOString(),
+    range,
+    series,
   };
 }
 
@@ -195,8 +242,12 @@ export function researchWebRoutes() {
         400,
       );
     }
+    const rangeParam = c.req.query('range') ?? '1mo';
+    const range = (FINANCE_RANGES as readonly string[]).includes(rangeParam)
+      ? (rangeParam as FinanceRange)
+      : '1mo';
     try {
-      const quote = await fetchFinanceQuote(parsed.data);
+      const quote = await fetchFinanceQuote(parsed.data, range);
       return c.json({ ok: true, quote });
     } catch (error) {
       return c.json(

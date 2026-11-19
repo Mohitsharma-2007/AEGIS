@@ -110,25 +110,36 @@ export class WorkspaceStore {
       .prepare("SELECT id, name FROM dots WHERE name LIKE 'Aegis %' AND name != 'Aegis'")
       .all();
     for (const row of rows) {
-      const dotId = String(row.id);
-      const threads = this.db
-        .prepare('SELECT id FROM thread_bindings WHERE dotId=?')
-        .all(dotId);
-      for (const thread of threads) {
-        this.db
-          .prepare('DELETE FROM thread_messages WHERE threadId=?')
-          .run(String(thread.id));
-        this.db
-          .prepare('DELETE FROM thread_visuals WHERE threadId=?')
-          .run(String(thread.id));
-        this.db
-          .prepare('DELETE FROM thread_bindings WHERE id=?')
-          .run(String(thread.id));
-      }
-      this.db.prepare('DELETE FROM dot_spaces WHERE dotId=?').run(dotId);
-      this.db.prepare('DELETE FROM computer_permissions WHERE dotId=?').run(dotId);
-      this.db.prepare('DELETE FROM dots WHERE id=?').run(dotId);
+      this.deleteDot(String(row.id));
     }
+  }
+  /**
+   * Remove an Agent and everything that only exists because of it.
+   *
+   * The threads it owned go with it (their messages and visuals too), so no
+   * conversation is left pointing at a missing Agent. Returns whether a row
+   * was actually removed, so the route can answer 404 instead of pretending.
+   */
+  deleteDot(dotId: string): boolean {
+    if (!this.dot(dotId)) return false;
+    const threads = this.db
+      .prepare('SELECT id FROM thread_bindings WHERE dotId=?')
+      .all(dotId);
+    for (const thread of threads) {
+      this.db
+        .prepare('DELETE FROM thread_messages WHERE threadId=?')
+        .run(String(thread.id));
+      this.db
+        .prepare('DELETE FROM thread_visuals WHERE threadId=?')
+        .run(String(thread.id));
+      this.db
+        .prepare('DELETE FROM thread_bindings WHERE id=?')
+        .run(String(thread.id));
+    }
+    this.db.prepare('DELETE FROM dot_spaces WHERE dotId=?').run(dotId);
+    this.db.prepare('DELETE FROM computer_permissions WHERE dotId=?').run(dotId);
+    this.db.prepare('DELETE FROM dots WHERE id=?').run(dotId);
+    return true;
   }
   close() {
     this.db.close();
