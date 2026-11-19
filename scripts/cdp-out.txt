@@ -1,0 +1,422 @@
+TITLE: AEGIS
+ROOT_HTML_LEN: 154673
+
+=== CONSOLE ERRORS ===
+
+=== NETWORK 4xx/5xx ===
+
+=== AX TREE ===
+[RootWebArea] AEGIS
+[navigation] Workspace navigation
+[separator] Drag to resize the sidebar
+[button] Draft a message for me
+[button] Search my workspace files
+[button] Analyze this dataset
+[button] Aegis home
+[button] Collapse sidebar
+[tablist] Workspace surfaces
+[button] Voice OS
+[button] Open settings
+[button] Aegis Aegis
+[button] New chat
+[button] Create Agent
+[navigation] Agents
+[button] Create Space
+[navigation] Spaces
+[button] Pause all Agents
+[button] Read the latest reply aloud
+[button] Agent Onboarding & Vault
+[button] Show AEGIS Computer
+[DisclosureTriangle] WhatsApp pairing and real send/receive status
+[heading] Aegis
+[button] Edit specialist
+[textbox] Start a conversation
+[button] Attach images or files
+[button] Talk with Voice OS
+[button] Start conversation
+[button] Conversation
+[button] Agents
+[button] Files
+[button] Memory
+[button] Research
+[button] Integrations
+[button] Companion
+[image] Aegis
+[InlineTextBox] AGENTS
+[button] Aegi Aegis
+[button] Edit Aegis settings
+[InlineTextBox] SPACES
+[button] Expand Everyday
+[button] Everyday
+[button] New conversation
+[button] Rename audit 16:38:52
+[button] Delete audit 16:38:52
+[button] audit 16:38:52 Aegis
+[button] Rename audit 16:38:32
+[button] Delete audit 16:38:32
+[button] audit 16:38:32 Aegis
+[button] Rename audit 16:38:04
+[button] Delete audit 16:38:04
+[button] audit 16:38:04 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 16:36:16
+[button] Delete audit 16:36:16
+[button] audit 16:36:16 Aegis
+[button] Rename audit 16:35:03
+[button] Delete audit 16:35:03
+[button] audit 16:35:03 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 16:32:54
+[button] Delete audit 16:32:54
+[button] audit 16:32:54 Aegis
+[button] Rename audit 16:28:44
+[button] Delete audit 16:28:44
+[button] audit 16:28:44 Aegis
+[button] Rename audit 16:28:17
+[button] Delete audit 16:28:17
+[button] audit 16:28:17 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 16:27:29
+[button] Delete audit 16:27:29
+[button] audit 16:27:29 Aegis
+[button] Rename audit 16:27:02
+[button] Delete audit 16:27:02
+[button] audit 16:27:02 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 16:25:22
+[button] Delete audit 16:25:22
+[button] audit 16:25:22 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 16:03:08
+[button] Delete audit 16:03:08
+[button] audit 16:03:08 Aegis
+[button] Rename audit 16:01:34
+[button] Delete audit 16:01:34
+[button] audit 16:01:34 Aegis
+[button] Rename audit 15:50:42
+[button] Delete audit 15:50:42
+[button] audit 15:50:42 Aegis
+[button] Rename audit 15:44:50
+[button] Delete audit 15:44:50
+[button] audit 15:44:50 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 14:16:21
+[button] Delete audit 14:16:21
+[button] audit 14:16:21 Aegis
+[button] Rename audit 14:16:19
+[button] Delete audit 14:16:19
+[button] audit 14:16:19 Aegis
+[button] Rename audit 14:16:16
+[button] Delete audit 14:16:16
+[button] audit 14:16:16 Aegis
+[button] Rename audit 14:16:04
+[button] Delete audit 14:16:04
+[button] audit 14:16:04 Aegis
+[button] Rename audit 14:13:09
+[button] Delete audit 14:13:09
+[button] audit 14:13:09 Aegis
+[button] Rename audit 14:13:09
+[button] Delete audit 14:13:09
+[button] audit 14:13:09 Aegis
+[button] Rename audit 14:13:09
+[button] Delete audit 14:13:09
+[button] audit 14:13:09 Aegis
+[button] Rename audit 14:13:08
+[button] Delete audit 14:13:08
+[button] audit 14:13:08 Aegis
+[button] Rename audit 13:52:16
+[button] Delete audit 13:52:16
+[button] audit 13:52:16 Aegis
+[button] Rename audit 13:52:16
+[button] Delete audit 13:52:16
+[button] audit 13:52:16 Aegis
+[button] Rename audit 13:52:15
+[button] Delete audit 13:52:15
+[button] audit 13:52:15 Aegis
+[button] Rename audit 13:52:14
+[button] Delete audit 13:52:14
+[button] audit 13:52:14 Aegis
+[button] Rename audit 13:52:14
+[button] Delete audit 13:52:14
+[button] audit 13:52:14 Aegis
+[button] Rename audit 13:36:20
+[button] Delete audit 13:36:20
+[button] audit 13:36:20 Aegis
+[button] Rename audit 13:36:15
+[button] Delete audit 13:36:15
+[button] audit 13:36:15 Aegis
+[button] Rename audit 13:36:09
+[button] Delete audit 13:36:09
+[button] audit 13:36:09 Aegis
+[button] Rename audit 13:36:07
+[button] Delete audit 13:36:07
+[button] audit 13:36:07 Aegis
+[button] Rename audit 13:36:05
+[button] Delete audit 13:36:05
+[button] audit 13:36:05 Aegis
+[button] Rename audit 13:35:34
+[button] Delete audit 13:35:34
+[button] audit 13:35:34 Aegis
+[button] Rename audit 13:35:34
+[button] Delete audit 13:35:34
+[button] audit 13:35:34 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:33
+[button] Delete audit 13:35:33
+[button] audit 13:35:33 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:32
+[button] Delete audit 13:35:32
+[button] audit 13:35:32 Aegis
+[button] Rename audit 13:35:31
+[button] Delete audit 13:35:31
+[button] audit 13:35:31 Aegis
+[button] Rename audit 13:34:43
+[button] Delete audit 13:34:43
+[button] audit 13:34:43 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 13:31:02
+[button] Delete audit 13:31:02
+[button] audit 13:31:02 Aegis
+[button] Rename audit 13:26:47
+[button] Delete audit 13:26:47
+[button] audit 13:26:47 Aegis
+[button] Rename raw sse dump
+[button] Delete raw sse dump
+[button] raw sse dump Aegis
+[button] Rename audit 13:18:45
+[button] Delete audit 13:18:45
+[button] audit 13:18:45 Aegis
+[InlineTextBox] Agents
+[InlineTextBox] /
+[InlineTextBox] Draft a message for me
+[InlineTextBox] Search my workspace files
+[InlineTextBox] Analyze this dataset
+[InlineTextBox] Aegis
+[InlineTextBox] New chat
+[image] Aegi
+[InlineTextBox] RECENT CHATS
+[searchbox] Search chats
+[InlineTextBox] Aegis
+[InlineTextBox] Connected
+[InlineTextBox] Pause
+[InlineTextBox] WhatsApp
+[InlineTextBox] pairing and real send/receive status
+[InlineTextBox] Aegis
+[InlineTextBox] Be thoughtful, practical, and concise. Help the user think clearly and 
+[InlineTextBox] follow through.
+[InlineTextBox] Edit specialist
+[InlineTextBox] Aegis
+[InlineTextBox] Everyday
+[InlineTextBox] audit 16:38:52
+[InlineTextBox] audit 16:38:32
+[InlineTextBox] audit 16:38:04
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 16:36:16
+[InlineTextBox] audit 16:35:03
+[InlineTextBox] raw sse dump
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 16:32:54
+[InlineTextBox] audit 16:28:44
+[InlineTextBox] audit 16:28:17
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 16:27:29
+[InlineTextBox] audit 16:27:02
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 16:25:22
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 16:03:08
+[InlineTextBox] audit 16:01:34
+[InlineTextBox] audit 15:50:42
+[InlineTextBox] audit 15:44:50
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 14:16:21
+[InlineTextBox] audit 14:16:19
+[InlineTextBox] audit 14:16:16
+[InlineTextBox] audit 14:16:04
+[InlineTextBox] audit 14:13:09
+[InlineTextBox] audit 14:13:09
+[InlineTextBox] audit 14:13:09
+[InlineTextBox] audit 14:13:08
+[InlineTextBox] audit 13:52:16
+[InlineTextBox] audit 13:52:16
+[InlineTextBox] audit 13:52:15
+[InlineTextBox] audit 13:52:14
+[InlineTextBox] audit 13:52:14
+[InlineTextBox] audit 13:36:20
+[InlineTextBox] audit 13:36:15
+[InlineTextBox] audit 13:36:09
+[InlineTextBox] audit 13:36:07
+[InlineTextBox] audit 13:36:05
+[InlineTextBox] audit 13:35:34
+[InlineTextBox] audit 13:35:34
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:33
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:32
+[InlineTextBox] audit 13:35:31
+[InlineTextBox] audit 13:34:43
+[InlineTextBox] raw sse dump
+[InlineTextBox] raw sse dump
+[InlineTextBox] raw sse dump
+[InlineTextBox] raw sse dump
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 13:31:02
+[InlineTextBox] audit 13:26:47
+[InlineTextBox] raw sse dump
+[InlineTextBox] audit 13:18:45
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis
+[InlineTextBox] Aegis

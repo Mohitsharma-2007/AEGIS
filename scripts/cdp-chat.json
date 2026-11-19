@@ -1,0 +1,30 @@
+{
+  "choseThread": {
+    "ok": true
+  },
+  "composer": {
+    "ok": true,
+    "disabled": false
+  },
+  "sendClick": {
+    "ok": true
+  },
+  "messagesBefore": 2,
+  "final": {
+    "count": 3,
+    "last": "ready",
+    "sending": false,
+    "err": null,
+    "bodyHasReady": true
+  },
+  "outcome": "reply-arrived",
+  "consoleErrors": [],
+  "exceptions": [],
+  "badHttp": [],
+  "copilotkitCalls": [
+    "200 application/json http://127.0.0.1:4310/api/copilotkit/info",
+    "200 application/json http://127.0.0.1:4310/api/copilotkit/threads?agentId=a010f3c9-f4b1-43ca-8808-851ea01fae1c&limit=20",
+    "200 text/event-stream http://127.0.0.1:4310/api/copilotkit/agent/a010f3c9-f4b1-43ca-8808-851ea01fae1c/connect",
+    "200 text/event-stream http://127.0.0.1:4310/api/copilotkit/agent/a010f3c9-f4b1-43ca-8808-851ea01fae1c/run"
+  ]
+}

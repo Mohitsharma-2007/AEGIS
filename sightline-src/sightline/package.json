@@ -1,0 +1,32 @@
+{
+  "name": "sightline-studio",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test test/*.test.js",
+    "predev": "node scripts/ocr-assets.mjs",
+    "prebuild": "node scripts/ocr-assets.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.0",
+    "@fontsource-variable/geist-mono": "^5.2.0",
+    "@fontsource/patrick-hand": "^5.3.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tesseract.js": "^6.0.1",
+    "three": "^0.176.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

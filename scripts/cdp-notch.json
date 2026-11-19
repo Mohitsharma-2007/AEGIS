@@ -1,0 +1,78 @@
+{
+  "initial": {
+    "title": "Aegis notch",
+    "island": {
+      "x": 573,
+      "y": 0,
+      "w": 372,
+      "h": 38,
+      "display": "block"
+    },
+    "ws": {
+      "x": 574,
+      "y": 44,
+      "w": 370,
+      "h": 322,
+      "display": "flex"
+    },
+    "deck2": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0,
+      "display": "none"
+    },
+    "bodyW": 1518,
+    "vw": 1518,
+    "hasWs": true,
+    "fileCount": "0",
+    "tcount": "",
+    "hoverCls": "island agents"
+  },
+  "afterHover": {
+    "islandCls": "island agents hover open",
+    "quickButtons": 10,
+    "quickRect": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0,
+      "display": "none"
+    }
+  },
+  "afterDwell": {
+    "islandCls": "island agents hover open",
+    "wsCls": "ws",
+    "wsRect": {
+      "x": 450,
+      "y": 38,
+      "w": 618,
+      "h": 322,
+      "display": "flex"
+    },
+    "openCls": true
+  },
+  "settings": {
+    "nsetCls": true,
+    "nsetRect": {
+      "x": 460,
+      "y": 79,
+      "w": 598,
+      "h": 271,
+      "display": "flex"
+    },
+    "controls": 14,
+    "cwVal": "300"
+  },
+  "afterDone": {
+    "nsetCls": false
+  },
+  "words": "2 words",
+  "taskCount": "0 / 0",
+  "afterCompactClick": {
+    "openCls": true,
+    "wsCls": "ws"
+  },
+  "consoleErrors": [],
+  "exceptions": []
+}

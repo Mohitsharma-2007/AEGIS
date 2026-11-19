@@ -1,0 +1,447 @@
+{
+  "report": [
+    {
+      "view": "chat-empty",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 52,
+          "y": 0,
+          "w": 242,
+          "h": 864,
+          "visible": true
+        },
+        "topbar": {
+          "x": 294,
+          "y": 0,
+          "w": 1209,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 294,
+          "y": 64,
+          "w": 1209,
+          "h": 800,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": false,
+        "breadcrumb": "Agents / Aegis",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": null,
+        "viewTitle": null
+      }
+    },
+    {
+      "view": "rail:Agents",
+      "info": {
+        "vw": 1518,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1466,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 65,
+          "y": 64,
+          "w": 1440,
+          "h": 792,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Agents",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": "Agents",
+        "viewTitle": "Agents"
+      }
+    },
+    {
+      "view": "rail:Files",
+      "info": {
+        "vw": 1518,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1466,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 240,
+          "y": 64,
+          "w": 1090,
+          "h": 659,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Files",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": null,
+        "viewTitle": null
+      }
+    },
+    {
+      "view": "rail:Memory",
+      "info": {
+        "vw": 1518,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1466,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 145,
+          "y": 64,
+          "w": 1280,
+          "h": 787,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Memory",
+        "railButtons": 9,
+        "sidebarButtons": 8,
+        "h1": null,
+        "viewTitle": null
+      }
+    },
+    {
+      "view": "rail:Research",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1451,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 158,
+          "y": 64,
+          "w": 1240,
+          "h": 1203,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Research",
+        "railButtons": 9,
+        "sidebarButtons": 8,
+        "h1": "Research",
+        "viewTitle": "Research"
+      }
+    },
+    {
+      "view": "rail:Integrations",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1451,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 233,
+          "y": 64,
+          "w": 1090,
+          "h": 5520,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Integrations",
+        "railButtons": 9,
+        "sidebarButtons": 8,
+        "h1": "Marketplace & Connector Hub",
+        "viewTitle": null
+      }
+    },
+    {
+      "view": "rail:Companion",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1451,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 188,
+          "y": 64,
+          "w": 1180,
+          "h": 1486,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Companion",
+        "railButtons": 9,
+        "sidebarButtons": 8,
+        "h1": "Companion",
+        "viewTitle": "Companion"
+      }
+    },
+    {
+      "view": "rail:settings",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "visible": false
+        },
+        "topbar": {
+          "x": 52,
+          "y": 0,
+          "w": 1451,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 52,
+          "y": 64,
+          "w": 1451,
+          "h": 3367,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": true,
+        "breadcrumb": "Agents / Settings",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": "Settings",
+        "viewTitle": "Settings"
+      }
+    },
+    {
+      "view": "voice-os",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 52,
+          "y": 0,
+          "w": 242,
+          "h": 864,
+          "visible": true
+        },
+        "topbar": {
+          "x": 294,
+          "y": 0,
+          "w": 1209,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 294,
+          "y": 64,
+          "w": 1209,
+          "h": 800,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": false,
+        "breadcrumb": "Agents / Aegis",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": null,
+        "viewTitle": null
+      }
+    },
+    {
+      "view": "chat-thread:none",
+      "info": {
+        "vw": 1503,
+        "vh": 864,
+        "bodyOverflowX": 0,
+        "rail": {
+          "x": 0,
+          "y": 0,
+          "w": 52,
+          "h": 864,
+          "visible": true
+        },
+        "sidebar": {
+          "x": 52,
+          "y": 0,
+          "w": 242,
+          "h": 864,
+          "visible": true
+        },
+        "topbar": {
+          "x": 294,
+          "y": 0,
+          "w": 1209,
+          "h": 64,
+          "visible": true
+        },
+        "main": {
+          "x": 294,
+          "y": 64,
+          "w": 1209,
+          "h": 800,
+          "visible": true
+        },
+        "overlapped": [],
+        "navCollapsed": false,
+        "breadcrumb": "Agents / Aegis",
+        "railButtons": 9,
+        "sidebarButtons": 12,
+        "h1": null,
+        "viewTitle": null
+      }
+    },
+    {
+      "sendResult": {
+        "ok": false,
+        "why": "no textarea"
+      },
+      "afterSend": {
+        "msgCount": 4,
+        "lastText": ""
+      }
+    }
+  ],
+  "errors": [],
+  "exceptions": [],
+  "badHttp": []
+}

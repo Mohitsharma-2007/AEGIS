@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="246" viewBox="0 0 480 246" role="img" aria-label="Civil aircraft flow field sample">
+ <defs><pattern id="raster" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#9cbaa9" stroke-opacity=".34"/></pattern><linearGradient id="paper" x2="0.9" y2="1"><stop stop-color="#ebeee3"/><stop offset="1" stop-color="#ccdcd3"/></linearGradient></defs>
+ <rect width="480" height="246" fill="url(#paper)"/>
+ <rect x="19" y="16" width="442" height="214" rx="9" fill="url(#raster)" stroke="#9db4a6"/>
+ <g fill="none" stroke="#6a9e94" stroke-width="1.45" opacity=".72">
+  <path d="M20 68h120c98 0 85-17 132-17 52 0 61 14 109 14h80M20 84h103c58 0 78-23 131-23 56 0 77 17 116 17h90M20 101h112c45 0 62-31 111-31 43 0 71 27 120 27h98M20 116h103c53 0 60-37 113-37 57 0 79 31 122 31h103"/>
+  <path d="M20 177h120c98 0 85 17 132 17 52 0 61-14 109-14h80M20 161h103c58 0 78 23 131 23 56 0 77-17 116-17h90M20 144h112c45 0 62 31 111 31 43 0 71-27 120-27h98M20 129h103c53 0 60 37 113 37 57 0 79-31 122-31h103"/>
+ </g>
+ <g stroke="#61827a" stroke-width="1.8" stroke-linejoin="round">
+  <path d="M176 118 225 59 239 55 245 119zm0 9 49 59 14 4 6-64zm106-11 26-30 9-2 8 33zm0 13 26 30 9 2 8-33z" fill="#b3c7bd"/>
+  <rect x="193" y="88" width="36" height="15" rx="5" fill="#84a79e"/><rect x="193" y="142" width="36" height="15" rx="5" fill="#84a79e"/>
+  <path d="M112 123q0-5 16-10t35-4h104q26 0 69 13-46 14-69 14H162q-22 0-37-5t-13-8z" fill="#f5f4ea"/>
+  <path d="M141 119h103m-103 7h103m67-4h19" stroke="#5b8d83" stroke-dasharray="3 3"/>
+ </g>
+ <g font-family="monospace" font-weight="700" font-size="12" fill="#45665c"><text x="32" y="40" letter-spacing="1.3">LAB 01 / LIVE FLOW</text><text x="445" y="213" text-anchor="end" font-size="10">CIVIL TWINJET • TOP VIEW</text></g>
+ <g fill="#518e81"><circle cx="72" cy="116" r="3"/><circle cx="144" cy="103" r="2.6"/><circle cx="260" cy="62" r="2.6"/><circle cx="340" cy="145" r="2.6"/><circle cx="401" cy="97" r="2.6"/><circle cx="89" cy="177" r="2.6"/><circle cx="290" cy="192" r="2.6"/></g>
+</svg>

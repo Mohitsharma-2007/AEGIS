@@ -1,0 +1,16 @@
+{
+  "name": "@aegis/context-memory",
+  "version": "1.0.0",
+  "description": "Context Memory — SQL knowledge graph for fast, accurate debugging of any project",
+  "main": "index.js",
+  "bin": {
+    "aegis-cm": "cli.js"
+  },
+  "scripts": {
+    "init": "node init.js",
+    "index": "node indexer.js",
+    "query": "node cli.js"
+  },
+  "keywords": ["context-memory", "knowledge-graph", "debugging", "codebase-analysis", "ai-assistant"],
+  "license": "MIT"
+}

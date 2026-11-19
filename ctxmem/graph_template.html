@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aegis Context Memory — Interactive Entity Relation Graph</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; overflow: hidden; }
+  .header { background: #1e293b; color: #fff; padding: 1.25rem 2rem; z-index: 100; }
+  .header h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .header p { opacity: 0.8; font-size: 0.9rem; }
+  .controls { padding: 0.75rem 2rem; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; z-index: 100; }
+  .controls label { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+  .controls select, .controls input { padding: 0.5rem; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+  .controls button { padding: 0.5rem 1rem; font-size: 0.9rem; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  .controls button:hover { background: #1d4ed8; }
+  .controls button.secondary { background: #64748b; }
+  .controls button.secondary:hover { background: #475569; }
+  .stats { font-size: 0.8rem; color: #64748b; margin-left: auto; }
+  #graph-container { width: 100vw; height: calc(100vh - 140px); position: relative; overflow: hidden; }
+  #graph { width: 100%; height: 100%; display: block; }
+  .node { cursor: pointer; stroke-width: 2px; }
+  .node-text { font: 11px sans-serif; pointer-events: none; fill: #334155; }
+  .edge { stroke: #94a3b8; stroke-opacity: 0.4; stroke-width: 1.5px; fill: none; }
+  .edge-label { font: 10px sans-serif; fill: #64748b; pointer-events: none; background: rgba(255,255,255,0.9); padding: 1px 3px; border-radius: 2px; }
+  .category-server { fill: #3b82f6; stroke: #2563eb; }
+  .category-client { fill: #10b981; stroke: #059669; }
+  .category-desktop { fill: #f59e0b; stroke: #d97706; }
+  .category-docs { fill: #8b5cf6; stroke: #7c3aed; }
+  .category-root { fill: #64748b; stroke: #475569; }
+  .category-shared { fill: #ec4899; stroke: #db2777; }
+  .category-security { fill: #ef4444; stroke: #dc2626; }
+  .category-memory { fill: #06b6d4; stroke: #0891b2; }
+  .category-ui { fill: #84cc16; stroke: #65a30d; }
+  .category-core { fill: #f97316; stroke: #ea580c; }
+  .category-functionality { fill: #0ea5e9; stroke: #0284c7; }
+  .type-function { fill: #fbbf24; stroke: #d97706; }
+  .type-css_class { fill: #a78bfa; stroke: #7c3aed; }
+  .type-issue { fill: #ef4444; stroke: #dc2626; }
+  .node.highlighted { stroke: #f59e0b; stroke-width: 4px; filter: drop-shadow(0 0 10px rgba(245,158,11,0.6)); }
+  .info-panel { position: absolute; top: 1rem; right: 1rem; width: 420px; max-height: calc(100vh - 160px); background: rgba(255,255,255,0.97); border: 1px solid #cbd5e1; border-radius: 10px; padding: 1.5rem; z-index: 200; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); overflow-y: auto; display: none; backdrop-filter: blur(12px); }
+  .info-panel.open { display: block; }
+  .info-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0; }
+  .info-panel-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; }
+  .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #94a3b8; padding: 0; }
+  .close-btn:hover { color: #ef4444; }
+  .info-section { margin-bottom: 1rem; }
+  .info-section h4 { font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.25rem; }
+  .info-item { margin-bottom: 0.4rem; font-size: 0.9rem; }
+  .info-item .label { font-weight: 600; color: #475569; }
+  .info-item .value { color: #1e293b; }
+  .info-item .value.mono { font-family: 'SF Mono', Monaco, monospace; font-size: 0.85rem; background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .issue-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin: 0.1rem; }
+  .issue-severity-critical { background: #fee2e2; color: #991b1b; }
+  .issue-severity-high { background: #fef3c7; color: #92400e; }
+  .issue-severity-medium { background: #dbeafe; color: #1e40af; }
+  .issue-severity-low { background: #dcfce7; color: #166534; }
+  .issue-status-fixed { background: #e5e7eb; color: #374151; }
+  .issue-status-open { background: #fef3c7; color: #92400e; }
+  .tag { display: inline-block; padding: 0.1rem 0.4rem; background: #e2e8f0; color: #475569; border-radius: 4px; font-size: 0.75rem; margin: 0.1rem; }
+  .tag.function { background: #fef3c7; color: #92400e; }
+  .tag.class { background: #dbeafe; color: #1e40af; }
+  .tag.variable { background: #dcfce7; color: #166534; }
+  .property-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid #f8fafc; font-size: 0.85rem; }
+  .property-row:last-child { border-bottom: none; }
+  .prop-key { color: #64748b; font-family: 'SF Mono', Monaco, monospace; }
+  .prop-val { color: #1e293b; font-family: 'SF Mono', Monaco, monospace; font-weight: 600; }
+  .linked-file { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid #f8fafc; font-size: 0.85rem; }
+  .linked-file .file-name { font-weight: 600; color: #2563eb; }
+  .linked-file .role { font-size: 0.75rem; color: #64748b; }
+  .legend { position: absolute; bottom: 1rem; left: 1rem; background: rgba(255,255,255,0.95); border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; font-size: 0.8rem; z-index: 150; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 200px; }
+  .legend h3 { margin-bottom: 0.5rem; font-size: 0.85rem; color: #1e293b; }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; }
+  .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+  .zoom-hint { position: absolute; bottom: 1rem; right: 1rem; background: rgba(30,41,59,0.8); color: #fff; padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; z-index: 100; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Aegis Context Memory — Interactive Entity Relation Graph</h1>
+  <p>Visual knowledge graph of ALL files, functions, CSS classes, issues, and their relationships in the Aegis desktop app</p>
+</div>
+
+<div class="controls">
+  <label for="categoryFilter">Category:</label>
+  <select id="categoryFilter">
+    <option value="all">All Categories</option>
+    <option value="server">Server File</option>
+    <option value="client">Client File</option>
+    <option value="desktop">Desktop File</option>
+    <option value="docs">Documentation</option>
+    <option value="root">Root File</option>
+    <option value="shared">Shared Code</option>
+    <option value="security">Security Issue</option>
+    <option value="memory">Memory Issue</option>
+    <option value="ui">UI Issue</option>
+    <option value="functionality">Functionality Issue</option>
+    <option value="core">Core Issue</option>
+    <option value="function">Function</option>
+    <option value="css_class">CSS Class</option>
+  </select>
+  <label for="search">Search:</label>
+  <input type="text" id="search" placeholder="Search files, functions, issues, CSS classes...">
+  <button onclick="renderGraph()">Refresh Layout</button>
+  <button class="secondary" onclick="centerGraph()">Center Graph</button>
+  <span class="stats" id="stats"></span>
+</div>
+
+<div class="graph-area" id="graph-container">
+  <svg id="graph"></svg>
+  <div class="zoom-hint">🖱️ Drag nodes • 🔍 Scroll to zoom • Click node for details</div>
+</div>
+
+<div class="info-panel" id="infoPanel">
+  <div class="info-panel-header">
+    <h3 id="infoTitle">Select an entity</h3>
+    <button class="close-btn" onclick="hideInfo()">&times;</button>
+  </div>
+  <div id="infoContent"></div>
+</div>
+
+<script>
+// EMBEDDED_DATA_PLACEHOLDER
+
+let allNodes = EMBEDDED_NODES;
+let allEdges = EMBEDDED_EDGES;
+let nodes = [];
+let edges = [];
+let selectedNodeId = null;
+let isDragging = null;
+let offsetX = 0, offsetY = 0;
+let scale = 1;
+let svg, graphGroup;
+
+function getColor(category) {
+  const colors = {
+    server: '#3b82f6', client: '#10b981', desktop: '#f59e0b', docs: '#8b5cf6',
+    root: '#64748b', shared: '#ec4899', security: '#ef4444', memory: '#06b6d4',
+    ui: '#84cc16', functionality: '#0ea5e9', core: '#f97316'
+  };
+  return colors[category] || '#64748b';
+}
+
+function renderGraph() {
+  svg = document.getElementById('graph');
+  const width = svg.clientWidth || window.innerWidth;
+  const height = svg.clientHeight || window.innerHeight;
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', height);
+  svg.innerHTML = '';
+  graphGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  graphGroup.setAttribute('transform', `translate(${offsetX}, ${offsetY}) scale(${scale})`);
+  svg.appendChild(graphGroup);
+
+  const filter = document.getElementById('categoryFilter').value;
+  const search = document.getElementById('search').value?.toLowerCase() || '';
+
+  const filteredNodes = allNodes.filter(n => {
+    if (filter !== 'all' && n.category !== filter && n.type !== filter) return false;
+    if (search && !n.label.toLowerCase().includes(search) && !n.full_path.toLowerCase().includes(search) && !n.title.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const filteredNodeIds = new Set(filteredNodes.map(n => n.id));
+  const filteredEdges = allEdges.filter(e => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to));
+
+  filteredEdges.forEach(edge => {
+    const fromNode = allNodes.find(n => n.id === edge.from);
+    const toNode = allNodes.find(n => n.id === edge.to);
+    if (!fromNode || !toNode) return;
+    const x1 = fromNode.fx !== undefined ? fromNode.fx : (fromNode.x || 400);
+    const y1 = fromNode.fy !== undefined ? fromNode.fy : (fromNode.y || 300);
+    const x2 = toNode.fx !== undefined ? toNode.fx : (toNode.x || 400);
+    const y2 = toNode.fy !== undefined ? toNode.fy : (toNode.y || 300);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('class', 'edge');
+    line.setAttribute('stroke', '#94a3b8');
+    graphGroup.appendChild(line);
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', midX);
+    label.setAttribute('y', midY - 4);
+    label.setAttribute('class', 'edge-label');
+    label.textContent = edge.type;
+    graphGroup.appendChild(label);
+  });
+
+  filteredNodes.forEach(node => {
+    const color = getColor(node.category);
+    const isHighlighted = selectedNodeId === node.id;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const r = isHighlighted ? 22 : (node.type === 'issue' ? 18 : 14);
+    circle.setAttribute('cx', node.fx !== undefined ? node.fx : (node.x || 400));
+    circle.setAttribute('cy', node.fy !== undefined ? node.fy : (node.y || 300));
+    circle.setAttribute('r', r);
+    circle.setAttribute('class', `node ${node.type || node.category} ${isHighlighted ? 'highlighted' : ''}`);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', isHighlighted ? '#f59e0b' : '#fff');
+    circle.setAttribute('stroke-width', isHighlighted ? 4 : 2);
+    circle.style.cursor = 'pointer';
+    circle.onmousedown = (e) => startDrag(e, node);
+    circle.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      selectedNodeId = node.id;
+      showInfo(node);
+      renderGraph();
+    };
+    graphGroup.appendChild(circle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', node.fx !== undefined ? node.fx : (node.x || 400));
+    text.setAttribute('y', (node.fy !== undefined ? node.fy : (node.y || 300)) + 4);
+    text.setAttribute('class', 'node-text');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#fff');
+    text.style.fontWeight = isHighlighted ? 'bold' : 'normal';
+    text.style.pointerEvents = 'none';
+    text.textContent = node.label;
+    graphGroup.appendChild(text);
+  });
+
+  document.getElementById('stats').textContent = `${filteredNodes.length} nodes · ${filteredEdges.length} edges (Total: ${allNodes.length} nodes · ${allEdges.length} edges)`;
+}
+
+function startDrag(e, node) {
+  isDragging = node;
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+  offsetX = node.fx !== undefined ? node.fx : (node.x || 400) - svgP.x / scale;
+  offsetY = node.fy !== undefined ? node.fy : (node.y || 300) - svgP.y / scale;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+}
+
+function onDrag(e) {
+  if (!isDragging) return;
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+  isDragging.fx = svgP.x / scale + offsetX;
+  isDragging.fy = svgP.y / scale + offsetY;
+  renderGraph();
+}
+
+function endDrag() {
+  if (isDragging) {
+    isDragging.x = isDragging.fx;
+    isDragging.y = isDragging.fy;
+  }
+  isDragging = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', endDrag);
+}
+
+function centerGraph() {
+  offsetX = 0;
+  offsetY = 0;
+  scale = 1;
+  renderGraph();
+}
+
+svg.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.min(Math.max(scale * delta, 0.3), 3);
+  renderGraph();
+}, { passive: false });
+
+function showInfo(node) {
+  const panel = document.getElementById('infoPanel');
+  const content = document.getElementById('infoContent');
+  panel.classList.add('open');
+  document.getElementById('infoTitle').textContent = node.label;
+  let html = '';
+  html += `<div class="info-section">
+    <h4>📋 Basic Information</h4>
+    <div class="info-item"><span class="label">ID:</span> <span class="value mono">${node.id}</span></div>
+    <div class="info-item"><span class="label">Label:</span> <span class="value">${node.label}</span></div>
+    ${node.full_path ? `<div class="info-item"><span class="label">Full Path:</span> <span class="value mono">${node.full_path}</span></div>` : ''}
+    ${node.category ? `<div class="info-item"><span class="label">Category:</span> <span class="value"><span class="tag">${node.category}</span></span></div>` : ''}
+    ${node.type ? `<div class="info-item"><span class="label">Type:</span> <span class="value"><span class="tag ${node.type}">${node.type}</span></span></div>` : ''}
+    ${node.extension ? `<div class="info-item"><span class="label">Extension:</span> <span class="value">${node.extension}</span></div>` : ''}
+    ${node.line_count ? `<div class="info-item"><span class="label">Lines:</span> <span class="value">${node.line_count}</span></div>` : ''}
+    ${node.status ? `<div class="info-item"><span class="label">Status:</span> <span class="value">${node.status}</span></div>` : ''}
+  </div>`;
+  if (node.description) {
+    html += `<div class="info-section">
+      <h4>📖 What This File Does</h4>
+      <div class="info-item"><span class="value">${node.description}</span></div>
+    </div>`;
+  }
+  if (node.root_cause) {
+    html += `<div class="info-section">
+      <h4>🎯 Main Cause / Root Cause</h4>
+      <div class="info-item"><span class="value">${node.root_cause}</span></div>
+    </div>`;
+  }
+  if (node.fix) {
+    html += `<div class="info-section">
+      <h4>✅ Fix Applied</h4>
+      <div class="info-item"><span class="value">${node.fix}</span></div>
+    </div>`;
+  }
+  if (node.severity || node.priority || node.effort) {
+    html += `<div class="info-section">
+      <h4>📊 Issue Metrics</h4>
+      ${node.severity ? `<div class="info-item"><span class="label">Severity:</span> <span class="issue-badge issue-severity-${node.severity}">${node.severity}</span></div>` : ''}
+      ${node.priority ? `<div class="info-item"><span class="label">Priority:</span> <span class="value">${node.priority}</span></div>` : ''}
+      ${node.effort ? `<div class="info-item"><span class="label">Effort:</span> <span class="value">${node.effort}</span></div>` : ''}
+    </div>`;
+  }
+  if (node.properties && node.properties.length > 0) {
+    html += `<div class="info-section">
+      <h4>🎨 CSS Properties</h4>
+      ${node.properties.map(p => `<div class="property-item"><span class="prop-name">${p.split(':')[0]}</span>: <span class="prop-value">${p.split(':').slice(1).join(':')}</span></div>`).join('')}
+    </div>`;
+  }
+  const nodeFunctions = allNodes.filter(n => n.file_id && n.file_id === node.id && n.type === 'function');
+  if (nodeFunctions.length > 0) {
+    html += `<div class="info-section">
+      <h4>⚙️ Functions (${nodeFunctions.length})</h4>
+      ${nodeFunctions.map(fn => `
+        <div class="info-item">
+          <span class="label">${fn.func_type || 'function'}:</span>
+          <span class="value mono">${fn.label}</span>
+          ${fn.signature ? `<br><span style="color:#64748b;font-size:0.8rem;">${fn.signature}</span>` : ''}
+          ${fn.start_line ? `<span style="color:#64748b;font-size:0.8rem;margin-left:0.5rem;">line ${fn.start_line}</span>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+  const linkedEdges = allEdges.filter(e => e.from === node.id || e.to === node.id);
+  if (linkedEdges.length > 0) {
+    html += `<div class="info-section">
+      <h4>🔗 Linked Files & Relationships (${linkedEdges.length})</h4>
+      ${linkedEdges.map(edge => {
+        const otherId = edge.from === node.id ? edge.to : edge.from;
+        const other = allNodes.find(n => n.id === otherId);
+        if (!other) return '';
+        return `<div class="linked-file">
+          <span class="file-name">${other.label}</span>
+          <span class="role">${edge.type || 'related'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  const relatedIssues = allEdges.filter(e => (e.from === node.id || e.to === node.id) && allNodes.some(n => n.id === (e.from === node.id ? e.to : e.from) && n.type === 'issue'));
+  if (relatedIssues.length > 0) {
+    html += `<div class="info-section">
+      <h4>🐛 Related Issues (${relatedIssues.length})</h4>
+      ${relatedIssues.map(edge => {
+        const issueId = edge.from === node.id ? edge.to : edge.from;
+        const issue = allNodes.find(n => n.id === issueId);
+        if (!issue) return '';
+        return `<div class="info-item" style="margin-bottom:0.3rem;">
+          <span class="issue-badge issue-severity-${issue.severity || 'medium'}">${issue.severity || 'medium'}</span>
+          <span class="issue-badge ${issue.status === 'fixed' ? 'issue-status-fixed' : 'issue-status-open'}">${issue.status || 'open'}</span>
+          <span class="value">${issue.label}: ${issue.title}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  content.innerHTML = html;
+}
+
+function hideInfo() {
+  document.getElementById('infoPanel').classList.remove('open');
+  selectedNodeId = null;
+  renderGraph();
+}
+
+document.getElementById('categoryFilter').addEventListener('change', renderGraph);
+document.getElementById('search').addEventListener('input', renderGraph);
+document.getElementById('graph-container').addEventListener('click', hideInfo);
+document.getElementById('infoPanel').addEventListener('click', (e) => e.stopPropagation());
+renderGraph();
+</script>
+</body>
+</html>

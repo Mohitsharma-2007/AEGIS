@@ -1,0 +1,100 @@
+# Aegis - Git ignore
+# Only the README.md and source code should be pushed to GitHub.
+# All docs, build artifacts, data, and secrets stay local.
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+release/
+*.nsis
+*.exe
+*.msi
+*.dmg
+*.pkg
+win-unpacked/
+linux-unpacked/
+mac-unpacked/
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.development
+*.secret
+secret*
+**/secret*
+.aegis-data/
+.aegis-data/**
+browser-secret
+whatsapp-secret
+
+# Logs
+*.log
+logs/
+**/logs/
+*.err.log
+*.out.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv311/
+.venv/
+.venv311/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.envrc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Misc
+tmp/
+*.tmp
+*.bak
+*.backup
+*.orig
+
+# Context memory (local SQLite knowledge graph)
+ctxmem/context_memory.db
+ctxmem/graph.html
+ctxmem/ui-components.html
+
+# Desktop app caches
+.cache/
+.electron/
+electron-builder.json
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vite
+.vite/
+.vitest-cache/
