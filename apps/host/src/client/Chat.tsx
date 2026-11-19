@@ -149,6 +149,14 @@ import { emitMascot } from './MascotPet';
 import { playCue } from './sounds';
 
 import { shouldSubmitComposerOnKeyDown } from './chat-composer';
+import {
+  AGENT_ALIASES,
+  AGENT_LABELS,
+  NAV_COMMANDS,
+  SLASH_COMMANDS,
+  tokenBeforeCaret,
+  type SlashCommand,
+} from './slash-commands';
 
 
 
@@ -186,83 +194,15 @@ const MAX_ATTACHMENTS = 4;
 
 
 
-const AGENT_ALIASES: Record<string, SwarmAgentId> = {
-
-  aegis: 'aegis',
-
-  rfi: 'rfi',
-
-  research: 'rfi',
-
-  finance: 'rfi',
-
-  market: 'rfi',
-
-  security: 'security',
-
-  sentinel: 'security',
-
-  files: 'files',
-
-  filo: 'files',
-
-  documents: 'files',
-
-  memory: 'memory',
-
-  memo: 'memory',
-
-  computer: 'computer',
-
-  operator: 'computer',
-
-  browser: 'computer',
-
-};
 
 
 
-const AGENT_LABELS: Record<SwarmAgentId, string> = {
-
-  aegis: 'Aegis',
-
-  rfi: 'RFI',
-
-  security: 'Sentinel',
-
-  files: 'Filo',
-
-  memory: 'Memo',
-
-  computer: 'Operator',
-
-};
 
 
 
-const NAV_COMMANDS: Record<string, string> = {
-  settings: 'settings',
-  browser: 'computer',
-  files: 'files',
-  research: 'research',
-  tools: 'integrations',
-  whatsapp: 'whatsapp',
-  marketplace: 'integrations',
-  integrations: 'integrations',
-  connections: 'integrations',
-  computer: 'computer',
-  terminal: 'terminal',
-  memory: 'memories',
-  memories: 'memories',
-  swarm: 'agents',
-  agents: 'agents',
-  agent: 'agents',
-  activity: 'tasks',
-  tasks: 'tasks',
-  harness: 'harness',
-  finance: 'finance',
-  ops: 'tasks',
-};
+
+
+
 
 const SLASH_HELP =
 
@@ -632,7 +572,9 @@ export function Chat({
   const [cmdMenuOpen, setCmdMenuOpen] = useState(false);
   const [cmdType, setCmdType] = useState<'slash' | 'at' | null>(null);
   const [cmdCursorPos, setCmdCursorPos] = useState(0);
-  const [cmdMenuPosition, setCmdMenuPosition] = useState({ x: 0, y: 0 });
+  // What has been typed after the `/` or `@`, and which row is highlighted.
+  const [cmdQuery, setCmdQuery] = useState('');
+  const [cmdActive, setCmdActive] = useState(0);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const [inlineVoice, setInlineVoiceState] = useState(false);
@@ -1301,6 +1243,62 @@ export function Chat({
 
 
 
+  // Rows for whichever menu is open, filtered by what was typed after the
+  // sigil. `cmdActive` indexes into these same arrays, so Enter/arrow keys and
+  // the highlighted row can never disagree.
+  const slashMatches = SLASH_COMMANDS.filter((command) =>
+    command.name.startsWith(cmdQuery.toLowerCase()),
+  );
+  const agentMatches = Object.entries(AGENT_ALIASES).filter(([alias]) =>
+    alias.startsWith(cmdQuery.toLowerCase()),
+  );
+
+  /**
+   * Replace the `/cmd` token under the caret with the chosen command. Commands
+   * that need arguments leave the caret after them so the owner can type them;
+   * argument-free commands run immediately.
+   */
+  const applySlashCommand = (command: SlashCommand) => {
+    setCmdMenuOpen(false);
+    if (command.args) {
+      const next = `/ ${command.name} `.replace('/ ', '/');
+      setDraft(
+        `${draft.slice(0, cmdCursorPos)}${next}${draft.slice(caretEnd())}`,
+      );
+      requestAnimationFrame(() => {
+        const el = composerRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(cmdCursorPos + next.length, cmdCursorPos + next.length);
+      });
+      return;
+    }
+    void submitComposer(`/${command.name}`);
+  };
+
+  /** Swap the `@partial` token for `@alias ` and keep typing. */
+  const applyMention = (alias: string) => {
+    setCmdMenuOpen(false);
+    const next = `@${alias} `;
+    setDraft(
+      `${draft.slice(0, cmdCursorPos)}${next}${draft.slice(caretEnd())}`,
+    );
+    requestAnimationFrame(() => {
+      const el = composerRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(cmdCursorPos + next.length, cmdCursorPos + next.length);
+    });
+  };
+
+  /** End of the token that started at `cmdCursorPos`. */
+  const caretEnd = () => {
+    const match = draft
+      .slice(cmdCursorPos)
+      .match(/^[/@][a-zA-Z0-9_-]*/);
+    return cmdCursorPos + (match ? match[0].length : 0);
+  };
+
   const submitComposer = async (override?: string) => {
 
     const value = (override ?? draft).trim();
@@ -1488,7 +1486,24 @@ export function Chat({
 
       onConsumed();
 
-      void send(initialPrompt || '', initialAttachments || []);
+      // A prompt composed before the thread existed can be a slash command
+      // (the new-thread composer offers the same menu). Route it through
+
+      // submitComposer so /settings navigates instead of being sent to the
+
+      // model as a message.
+
+      if (initialPrompt?.trim().startsWith('/')) {
+
+        setDraft(initialPrompt);
+
+        void submitComposer(initialPrompt);
+
+      } else {
+
+        void send(initialPrompt || '', initialAttachments || []);
+
+      }
 
     }
 
@@ -2668,95 +2683,25 @@ export function Chat({
 
               const lastChar = val[val.length - 1];
 
-              const atIndex = val.lastIndexOf('@');
-
-              const slashIndex = val.indexOf('/');
-
-              const lastSpace = Math.max(val.lastIndexOf(' '), val.lastIndexOf('\n'));
-
-              if (slashIndex >= 0 && (slashIndex === 0 || val[slashIndex - 1] === ' ' || slashIndex === val.length - 1)) {
-
+              // The menu follows the token under the caret, so `/` and `@`
+              // work anywhere in the draft, not only at position 0.
+              const caret = e.target.selectionStart ?? val.length;
+              const { token, start } = tokenBeforeCaret(val, caret);
+              if (token.startsWith('/')) {
                 setCmdMenuOpen(true);
-
                 setCmdType('slash');
-
-                setCmdCursorPos(slashIndex);
-
-                // Position menu near cursor
-                const el = composerRef.current;
-
-                if (el) {
-
-                  const rect = el.getBoundingClientRect();
-
-                  const lineHeight = parseInt(window.getComputedStyle(el).lineHeight) || 20;
-
-                  // Approximate cursor position based on character index
-
-                  const charsBefore = val.slice(0, slashIndex);
-
-                  const lines = charsBefore.split('\n');
-
-                  const currentLine = lines[lines.length - 1].length;
-
-                  const lineIndex = lines.length - 1;
-
-                  const charWidth = parseInt(window.getComputedStyle(el).fontSize) * 0.6;
-
-                  setCmdMenuPosition({
-
-                    x: rect.left + currentLine * charWidth + 4,
-
-                    y: rect.top + lineIndex * lineHeight + 4,
-
-                  });
-
-                }
-
-              } else if (atIndex >= 0 && (atIndex === 0 || val[atIndex - 1] === ' ')) {
-
+                setCmdCursorPos(start);
+                setCmdQuery(token.slice(1));
+                setCmdActive(0);
+              } else if (/^@[a-zA-Z0-9_-]*$/.test(token)) {
                 setCmdMenuOpen(true);
-
                 setCmdType('at');
-
-                setCmdCursorPos(atIndex);
-
-                // Position menu near cursor
-
-                const el = composerRef.current;
-
-                if (el) {
-
-                  const rect = el.getBoundingClientRect();
-
-                  const lineHeight = parseInt(window.getComputedStyle(el).lineHeight) || 20;
-
-                  const charsBefore = val.slice(0, atIndex);
-
-                  const lines = charsBefore.split('\n');
-
-                  const currentLine = lines[lines.length - 1].length;
-
-                  const lineIndex = lines.length - 1;
-
-                  const charWidth = parseInt(window.getComputedStyle(el).fontSize) * 0.6;
-
-                  setCmdMenuPosition({
-
-                    x: rect.left + currentLine * charWidth + 4,
-
-                    y: rect.top + lineIndex * lineHeight + 4,
-
-                  });
-
-                }
-
-              } else if (val.trim() === '' || (slashIndex <= lastSpace && atIndex <= lastSpace)) {
-
+                setCmdCursorPos(start);
+                setCmdQuery(token.slice(1));
+                setCmdActive(0);
+              } else {
                 setCmdMenuOpen(false);
-
               }
-
             }}
 
             onPaste={(e) => {
@@ -2775,21 +2720,58 @@ export function Chat({
 
             onKeyDown={(e) => {
 
-              if (cmdMenuOpen && e.key === 'Enter') {
+              if (cmdMenuOpen && cmdType && e.key === 'Enter') {
 
-                e.preventDefault();
+                // Enter picks the highlighted row instead of sending a
+                // half-typed `/comm` to the model.
 
-                setCmdMenuOpen(false);
+                const rows = cmdType === 'slash' ? slashMatches : agentMatches;
 
-                void submitComposer();
+                if (rows.length) {
 
-                return;
+                  e.preventDefault();
+
+                  const row = rows[Math.min(cmdActive, rows.length - 1)];
+
+                  if (cmdType === 'slash')
+
+                    applySlashCommand(row as SlashCommand);
+
+                  else applyMention(String((row as [string, string])[0]));
+
+                  return;
+
+                }
 
               }
 
               if (cmdMenuOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
 
                 e.preventDefault();
+
+                const rows = cmdType === 'slash' ? slashMatches : agentMatches;
+
+                if (!rows.length) return;
+
+                const delta = e.key === 'ArrowDown' ? 1 : -1;
+
+                setCmdActive((current) =>
+
+                  (current + delta + rows.length) % rows.length,
+
+                );
+
+                return;
+
+              }
+
+              if (cmdMenuOpen && e.key === 'Tab' && cmdType === 'slash') {
+
+                // Tab completes without running, for commands that take args.
+
+                const rows = slashMatches;
+
+                if (rows.length) e.preventDefault();
 
                 return;
 
@@ -2819,41 +2801,55 @@ export function Chat({
 
           />
 
-          {/* Command menu for / and @ */}
-          {cmdMenuOpen && (
+          {/* The / and @ menu, anchored above the composer by CSS. */}
+          {cmdMenuOpen && (cmdType === 'slash' || cmdType === 'at') && (
             <div
               className="cmd-menu"
-              style={{
-                position: 'fixed',
-                zIndex: 60,
-                left: cmdMenuPosition.x,
-                top: cmdMenuPosition.y,
-              }}
+              role="listbox"
+              aria-label={cmdType === 'slash' ? 'Slash commands' : 'Mention an agent'}
             >
-              {cmdType === 'slash' ? (
-                <div className="cmd-section">
-                  <span className="cmd-label">Commands</span>
-                  <div className="cmd-item" onClick={() => void submitComposer('/help')}> /help - Show available commands</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/agents')}> /agents - List available agents</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/computer')}> /computer - Open computer control</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/browser')}> /browser - Open browser control</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/settings')}> /settings - Open settings</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/memory')}> /memory - View memory</div>
-                  <div className="cmd-item" onClick={() => void submitComposer('/research')}> /research - Start research</div>
-                  <div className="cmd-item" onClick={() => { setDraft('/computer'); setCmdMenuOpen(false); }}> /computer - Open computer control</div>
-                  <div className="cmd-section">
-                    <span className="cmd-label">Agents</span>
-                    <div className="cmd-item" onClick={() => { setDraft('/computer agent'); setCmdMenuOpen(false); }}> Change model</div>
-                    <div className="cmd-item" onClick={() => { setDraft('/computer add'); setCmdMenuOpen(false); }}> Add command</div>
-                    <div className="cmd-item" onClick={() => { setDraft('/agents'); setCmdMenuOpen(false); }}> Add agents</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="cmd-section">
-                  <span className="cmd-label">Mention agent</span>
-                  {Object.entries(AGENT_ALIASES).map(([alias, id]) => (
-                    <div className="cmd-item" key={id} onClick={() => { setDraft(`@${alias} `); setCmdMenuOpen(false); }}> @{alias} - {AGENT_LABELS[id as keyof typeof AGENT_LABELS] || alias}</div>
+              <span className="cmd-label">
+                {cmdType === 'slash' ? 'Commands' : 'Mention agent'}
+              </span>
+              {cmdType === 'slash'
+                ? slashMatches.map((command, index) => (
+                    <button
+                      key={command.name}
+                      type="button"
+                      role="option"
+                      aria-selected={index === cmdActive}
+                      className={`cmd-item ${index === cmdActive ? 'is-active' : ''}`}
+                      onMouseEnter={() => setCmdActive(index)}
+                      onClick={() => applySlashCommand(command)}
+                    >
+                      <span className="cmd-key">
+                        /{command.name}
+                        {command.args ? ` ${command.args}` : ''}
+                      </span>
+                      <span className="cmd-desc">{command.description}</span>
+                    </button>
+                  ))
+                : agentMatches.map(([alias, id], index) => (
+                    <button
+                      key={alias}
+                      type="button"
+                      role="option"
+                      aria-selected={index === cmdActive}
+                      className={`cmd-item ${index === cmdActive ? 'is-active' : ''}`}
+                      onMouseEnter={() => setCmdActive(index)}
+                      onClick={() => applyMention(alias)}
+                    >
+                      <span className="cmd-key">@{alias}</span>
+                      <span className="cmd-desc">
+                        {AGENT_LABELS[id as SwarmAgentId] ?? alias}
+                      </span>
+                    </button>
                   ))}
+              {(cmdType === 'slash' ? slashMatches : agentMatches).length === 0 && (
+                <div className="cmd-empty">
+                  {cmdType === 'slash'
+                    ? `No command matches "/${cmdQuery}".`
+                    : `No agent matches "@${cmdQuery}".`}
                 </div>
               )}
             </div>

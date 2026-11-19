@@ -48,6 +48,7 @@ import {
   isOffline,
   OFFLINE_MESSAGE,
   setToken,
+  type SwarmAgentId,
 } from './api';
 import { trackSetupStep } from './setup-telemetry';
 import {
@@ -90,6 +91,14 @@ import { IntegrationsView } from './IntegrationsView';
 import { WhatsAppCard } from './WhatsAppCard';
 import { AgentOnboardingModal, type EncryptedVaultRecord } from './AgentOnboardingModal';
 import { submitComposerOnEnter } from './chat-composer';
+import {
+  AGENT_ALIASES,
+  AGENT_LABELS,
+  NAV_COMMANDS,
+  SLASH_COMMANDS,
+  tokenBeforeCaret,
+  type SlashCommand,
+} from './slash-commands';
 import { adoptServerSoundPreference, playCue } from './sounds';
 import { FinancePage } from './FinancePage';
 
@@ -613,6 +622,14 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
     focusPane('Brief');
   }, [capture?.text, focusPane]);
   const [prompt, setPrompt] = useState('');
+  // `/` and `@` menu for the new-thread composer. It shares SLASH_COMMANDS and
+  // NAV_COMMANDS with the in-conversation composer, so a command typed before
+  // a thread exists does the same thing instead of being sent to the model.
+  const [emptyMenu, setEmptyMenu] = useState<'slash' | 'at' | null>(null);
+  const [emptyQuery, setEmptyQuery] = useState('');
+  const [emptyActive, setEmptyActive] = useState(0);
+  const [emptyTokenStart, setEmptyTokenStart] = useState(0);
+  const emptyComposerRef = useRef<HTMLTextAreaElement>(null);
   const [pendingPrompt, setPendingPrompt] = useState<string>();
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>();
@@ -812,6 +829,87 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
     if (accepted.length) {
       setAttachments((current) => [...current, ...accepted]);
     }
+  };
+
+  /** Rows the new-thread `/` and `@` menu shows, filtered by what was typed. */
+  const emptySlashMatches = SLASH_COMMANDS.filter((command) =>
+    command.name.startsWith(emptyQuery.toLowerCase()),
+  );
+  const emptyAgentMatches = Object.entries(AGENT_ALIASES).filter(([alias]) =>
+    alias.startsWith(emptyQuery.toLowerCase()),
+  );
+
+  /** End of the `/token` or `@token` that starts at `emptyTokenStart`. */
+  const emptyTokenEnd = () =>
+    emptyTokenStart +
+    (prompt.slice(emptyTokenStart).match(/^[/@][a-zA-Z0-9_-]*/)?.[0].length ?? 0);
+
+  /** Replace the `/token` under the caret in the new-thread composer. */
+  const applyEmptySlash = (command: SlashCommand) => {
+    setEmptyMenu(null);
+    if (command.args) {
+      const token = `/${command.name} `;
+      setPrompt(
+        `${prompt.slice(0, emptyTokenStart)}${token}${prompt.slice(emptyTokenEnd())}`,
+      );
+      requestAnimationFrame(() => {
+        const el = emptyComposerRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(
+          emptyTokenStart + token.length,
+          emptyTokenStart + token.length,
+        );
+      });
+      return;
+    }
+    setPrompt('');
+    // Navigation commands work before a thread exists. Everything else needs
+    // chat context, so it starts the first conversation instead.
+    const target = NAV_COMMANDS[command.name];
+    if (target) {
+      window.dispatchEvent(new CustomEvent('aegis:nav', { detail: target }));
+      return;
+    }
+    void newConversation(`/${command.name}`);
+  };
+
+  /** Swap the `@partial` token for `@alias ` and keep typing. */
+  const applyEmptyMention = (alias: string) => {
+    setEmptyMenu(null);
+    const token = `@${alias} `;
+    setPrompt(
+      `${prompt.slice(0, emptyTokenStart)}${token}${prompt.slice(emptyTokenEnd())}`,
+    );
+    requestAnimationFrame(() => {
+      const el = emptyComposerRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(
+        emptyTokenStart + token.length,
+        emptyTokenStart + token.length,
+      );
+    });
+  };
+
+  /** Track the `/` or `@` token under the caret in the new-thread composer. */
+  const syncEmptyMenu = (value: string, caret: number) => {
+    const { token, start } = tokenBeforeCaret(value, caret);
+    if (token.startsWith('/')) {
+      setEmptyMenu('slash');
+      setEmptyTokenStart(start);
+      setEmptyQuery(token.slice(1));
+      setEmptyActive(0);
+      return;
+    }
+    if (/^@[a-zA-Z0-9_-]*$/.test(token)) {
+      setEmptyMenu('at');
+      setEmptyTokenStart(start);
+      setEmptyQuery(token.slice(1));
+      setEmptyActive(0);
+      return;
+    }
+    setEmptyMenu(null);
   };
 
   const newConversation = async (text?: string, initialFiles?: ChatAttachment[]) => {
@@ -1598,23 +1696,108 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
                       </div>
                     )}
                     <textarea
+                      ref={emptyComposerRef}
                       aria-label="Start a conversation"
                       placeholder={
                         configured
-                          ? `Message ${dot.name}...`
+                          ? `Message ${dot.name}...  type / for commands, @ for agents`
                           : 'Your first conversation starts after setup.'
                       }
                       value={prompt}
                       maxLength={4000}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      onKeyDown={(e) =>
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPrompt(value);
+                        syncEmptyMenu(value, e.target.selectionStart ?? value.length);
+                      }}
+                      onKeyDown={(e) => {
+                        if (emptyMenu) {
+                          const rows =
+                            emptyMenu === 'slash' ? emptySlashMatches : emptyAgentMatches;
+                          if (e.key === 'Enter' && rows.length) {
+                            e.preventDefault();
+                            const row = rows[Math.min(emptyActive, rows.length - 1)];
+                            if (emptyMenu === 'slash') applyEmptySlash(row as SlashCommand);
+                            else applyEmptyMention(String((row as [string, string])[0]));
+                            return;
+                          }
+                          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (!rows.length) return;
+                            const delta = e.key === 'ArrowDown' ? 1 : -1;
+                            setEmptyActive(
+                              (current) => (current + delta + rows.length) % rows.length,
+                            );
+                            return;
+                          }
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setEmptyMenu(null);
+                            return;
+                          }
+                        }
                         submitComposerOnEnter(
                           e,
                           configured && !busy && (!!prompt.trim() || attachments.length > 0),
-                        )
-                      }
+                        );
+                      }}
                       disabled={!configured}
                     />
+                    {emptyMenu && (
+                      <div
+                        className="cmd-menu"
+                        role="listbox"
+                        aria-label={
+                          emptyMenu === 'slash' ? 'Slash commands' : 'Mention an agent'
+                        }
+                      >
+                        <span className="cmd-label">
+                          {emptyMenu === 'slash' ? 'Commands' : 'Mention agent'}
+                        </span>
+                        {emptyMenu === 'slash'
+                          ? emptySlashMatches.map((command, index) => (
+                              <button
+                                key={command.name}
+                                type="button"
+                                role="option"
+                                aria-selected={index === emptyActive}
+                                className={`cmd-item ${index === emptyActive ? 'is-active' : ''}`}
+                                onMouseEnter={() => setEmptyActive(index)}
+                                onClick={() => applyEmptySlash(command)}
+                              >
+                                <span className="cmd-key">
+                                  /{command.name}
+                                  {command.args ? ` ${command.args}` : ''}
+                                </span>
+                                <span className="cmd-desc">{command.description}</span>
+                              </button>
+                            ))
+                          : emptyAgentMatches.map(([alias, id], index) => (
+                              <button
+                                key={alias}
+                                type="button"
+                                role="option"
+                                aria-selected={index === emptyActive}
+                                className={`cmd-item ${index === emptyActive ? 'is-active' : ''}`}
+                                onMouseEnter={() => setEmptyActive(index)}
+                                onClick={() => applyEmptyMention(alias)}
+                              >
+                                <span className="cmd-key">@{alias}</span>
+                                <span className="cmd-desc">
+                                  {AGENT_LABELS[id as SwarmAgentId] ?? alias}
+                                </span>
+                              </button>
+                            ))}
+                        {(emptyMenu === 'slash' ? emptySlashMatches : emptyAgentMatches)
+                          .length === 0 && (
+                          <div className="cmd-empty">
+                            {emptyMenu === 'slash'
+                              ? `No command matches "/${emptyQuery}".`
+                              : `No agent matches "@${emptyQuery}".`}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="composer-bottom">
                       <span>
                         <MessageCircle size={14} />
