@@ -15,12 +15,20 @@ import { CaptureDialog, ImportDialog, Sidebar } from './components/panels.jsx';
 import ModelDialog from './components/ModelDialog.jsx';
 
 const sampleSource=(id)=>{const item=EXAMPLES.find(x=>x.id===id)||EXAMPLES[0];return {type:'demo',name:item.name,url:item.source};};
-const initialSample=new URLSearchParams(window.location.search).get('demo')==='airflow'?'lab':'pi';
-const initial={scene:editorialExample(initialSample,'3d'),origin:'demo',elapsed:null,index:1};
+// Deep links from the AEGIS model library: /sightline/?demo=<id>&mode=3d|2d&variant=engine
+const params=new URLSearchParams(window.location.search);
+const requested=params.get('demo');
+const initialSample=EXAMPLES.some(x=>x.id===requested)?requested:(requested==='airflow'?'lab':'pi');
+const initialMode=params.get('mode')==='2d'?'2d':'3d';
+const initialVariant=params.get('variant')==='engine'?'engine':undefined;
+const initialScene=initialSample==='filter'
+  ?compilePlan(FILTER_PLAN,initialMode)
+  :editorialExample(initialSample,initialMode,initialVariant);
+const initial={scene:initialScene,origin:'demo',elapsed:null,index:1};
 const emptyState={scene:null,origin:null,elapsed:null};
 
 export default function App() {
-  const [example,setExample]=useState(initialSample),[source,setSource]=useState(()=>sampleSource(initialSample)),[mode,setMode]=useState('3d'),[record,setRecord]=useState(initial);
+  const [example,setExample]=useState(initialSample),[source,setSource]=useState(()=>sampleSource(initialSample)),[mode,setMode]=useState(initialMode),[record,setRecord]=useState(initial);
   const [prompt,setPrompt]=useState(''),[runtime,setRuntime]=useState(null),[follow,setFollow]=useState(false);
   const lab=useAeroLab(labKind(record.scene));
   const [job,setJob]=useState('model'),[tour,setTour]=useState(null);

@@ -763,6 +763,22 @@ const startSidebarResize = (event: { clientX: number; preventDefault: () => void
     (item) => item.id === selectedThread,
   );
   const configured = !!workspace && workspace.setup.missing.length === 0;
+  // First-run onboarding opens itself. It used to be reachable only by pressing
+  // a button, so a fresh install sat on an empty workspace with no obvious next
+  // step. It fires once, only after the workspace has loaded, and never again
+  // once the owner has finished or dismissed it.
+  const onboardingChecked = useRef(false);
+  useEffect(() => {
+    if (onboardingChecked.current || !workspace) return;
+    onboardingChecked.current = true;
+    if (configured) return;
+    try {
+      if (localStorage.getItem('aegis-onboarding-completed') === 'true') return;
+    } catch {
+      // Storage unavailable: treat it as a first run.
+    }
+    setOnboardingOpen(true);
+  }, [workspace, configured]);
   const setupStep = workspace
     ? dialog?.type === 'settings'
       ? 'settings'

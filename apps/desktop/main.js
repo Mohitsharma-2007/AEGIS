@@ -53,6 +53,7 @@ let visualLayerVisible = false;
 // click-through so the owner keeps using the app underneath.
 let visualInteractive = false;
 let visualHotkey = '';
+let notchHotkey = '';
 let trayPill = null;
 let trayAnchorPoint = null;
 let tray = null;
@@ -792,7 +793,9 @@ function createWindow() {
       !mainWindow.isMinimized()
     );
     if (appActive) {
-      if (desktopSurface === 'notch' && notchVisible) toggleNotch(false, false);
+      // A notch the owner summoned explicitly (hotkey, tray, widget call) stays
+      // up even while the app has focus. Only the automatic surface yields.
+      if (desktopSurface === 'notch' && notchVisible && !notchPinned) toggleNotch(false, false);
       setTrayPillVisible(false);
     } else if (desktopSurface === 'notch' && !notchVisible) {
       toggleNotch(true, false);
@@ -1061,6 +1064,30 @@ function toggleVisualLayer(show) {
     visualLayerVisible = false;
     visualInteractive = false;
     writeLog('visual: hidden');
+  }
+}
+
+/**
+ * Summon or dismiss the Notch from anywhere.
+ *
+ * The Notch is the shared voice surface: its mic button and the tray's "Talk to
+ * Aegis" both end up in openVoice(), so a summon only has to bring the island up
+ * and the existing controls take over. Kept separate from the visual-layer
+ * shortcut so the two cannot disable each other when one accelerator is taken.
+ */
+function registerNotchShortcuts() {
+  if (notchHotkey) return;
+  // Alt+Space is the convention for a summonable assistant; Ctrl+Alt+Space is
+  // the fallback for shells that already own Alt+Space.
+  for (const accelerator of ['Alt+Space', 'CommandOrControl+Alt+Space']) {
+    try {
+      if (globalShortcut.register(accelerator, () => toggleNotch())) {
+        notchHotkey = notchHotkey ? `${notchHotkey}, ${accelerator}` : accelerator;
+        writeLog(`notch: hotkey ${accelerator}`);
+      }
+    } catch (error) {
+      writeLog(`notch: hotkey ${accelerator} failed: ${error.message}`);
+    }
   }
 }
 
@@ -2049,6 +2076,11 @@ if (!gotLock) {
       registerVisualShortcuts();
     } catch (error) {
       writeLog(`visual: shortcut registration failed: ${error.message}`);
+    }
+    try {
+      registerNotchShortcuts();
+    } catch (error) {
+      writeLog(`notch: shortcut registration failed: ${error.message}`);
     }
     // Only the surface the owner chose is launched. Widgets live inside the app
     // and the notch; a third floating window was pure noise (and the widgets
