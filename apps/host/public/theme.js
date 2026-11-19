@@ -1,0 +1,15 @@
+// Applies the saved theme before the first paint so dark mode never flashes
+// white. Kept in sync with src/client/theme.ts, which handles later changes.
+(function () {
+  // AEGIS (W-FIX 3a): dark-first default (graphite brand base) — kept in
+  // sync with src/client/theme.ts.
+  var preference = 'dark';
+  try {
+    preference = localStorage.getItem('aegis-theme') || 'dark';
+  } catch (error) {}
+  var dark =
+    preference === 'dark' ||
+    (preference === 'system' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+})();

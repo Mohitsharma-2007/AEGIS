@@ -1,0 +1,965 @@
+{
+  "characters": {
+    "aegi": {
+      "name": "Aegi",
+      "role": "Lead assistant",
+      "job": "Talks to you, plans, and hands work to the specialists",
+      "personality": "calm, breathes and glances around",
+      "shape": "aegi",
+      "palette": {
+        "body": "#BA5B45",
+        "detail": "#9E4735",
+        "eye": "#FBF8F4",
+        "accent": "#1F2224",
+        "onAccent": "#FBF8F4",
+        "blush": "#F3A791",
+        "bright": "#D9755C",
+        "pop": "#FFC857"
+      },
+      "signatureStates": []
+    },
+    "mail": {
+      "name": "Posty",
+      "role": "Mail",
+      "job": "Reads, drafts, sends and sorts email",
+      "personality": "eager, does a little hop",
+      "shape": "mail",
+      "palette": {
+        "body": "#3F6FE0",
+        "detail": "#2C55BE",
+        "eye": "#FBF8F4",
+        "accent": "#1B2440",
+        "onAccent": "#FBF8F4",
+        "blush": "#8FB0F7",
+        "bright": "#6C93F2",
+        "pop": "#FFC857"
+      },
+      "signatureStates": [
+        "mail-incoming",
+        "mail-sending",
+        "mail-reading"
+      ]
+    },
+    "social": {
+      "name": "Chatty",
+      "role": "WhatsApp & socials",
+      "job": "Handles chats, DMs, mentions and posts",
+      "personality": "bubbly, sways and smiles",
+      "shape": "social",
+      "palette": {
+        "body": "#22A56A",
+        "detail": "#178553",
+        "eye": "#FBF8F4",
+        "accent": "#12301F",
+        "onAccent": "#FBF8F4",
+        "blush": "#8FE0B8",
+        "bright": "#3CC987",
+        "pop": "#FF5C7A"
+      },
+      "signatureStates": [
+        "social-typing",
+        "social-message",
+        "social-react"
+      ]
+    },
+    "files": {
+      "name": "Filo",
+      "role": "Files",
+      "job": "Finds, organises, uploads and converts files",
+      "personality": "tidy, steady, peeks sideways",
+      "shape": "files",
+      "palette": {
+        "body": "#F2A72E",
+        "detail": "#D4891A",
+        "eye": "#2B2015",
+        "accent": "#2B2015",
+        "onAccent": "#FFF8EA",
+        "blush": "#E8862A",
+        "bright": "#F7BC55",
+        "pop": "#FFFFFF"
+      },
+      "signatureStates": [
+        "files-organizing",
+        "files-upload",
+        "files-found"
+      ]
+    },
+    "memory": {
+      "name": "Memo",
+      "role": "Memory",
+      "job": "Remembers facts and preferences, recalls context",
+      "personality": "dreamy, floats and looks up",
+      "shape": "memory",
+      "palette": {
+        "body": "#7B5BE6",
+        "detail": "#6042C8",
+        "eye": "#FBF8F4",
+        "accent": "#231A45",
+        "onAccent": "#FBF8F4",
+        "blush": "#BBA9F8",
+        "bright": "#9C82F2",
+        "pop": "#FFD166"
+      },
+      "signatureStates": [
+        "memory-saving",
+        "memory-recalling",
+        "memory-linking"
+      ]
+    },
+    "harness": {
+      "name": "Rig",
+      "role": "Harness",
+      "job": "Runs tools, commands, tests and builds",
+      "personality": "focused, ticks like a machine",
+      "shape": "harness",
+      "palette": {
+        "body": "#1596A4",
+        "detail": "#0E7683",
+        "eye": "#FBF8F4",
+        "accent": "#0F2A2F",
+        "onAccent": "#FBF8F4",
+        "blush": "#84D6DF",
+        "bright": "#35B9C7",
+        "pop": "#FFB703"
+      },
+      "signatureStates": [
+        "harness-running",
+        "harness-testing",
+        "harness-building"
+      ]
+    },
+    "security": {
+      "name": "Guard",
+      "role": "Security",
+      "job": "Checks permissions, scans, locks and warns",
+      "personality": "watchful, stands firm, eyes sweep left and right",
+      "shape": "security",
+      "palette": {
+        "body": "#33427F",
+        "detail": "#8FA2EE",
+        "eye": "#FBF8F4",
+        "accent": "#38D39F",
+        "onAccent": "#10261F",
+        "blush": "#6B7DCB",
+        "bright": "#7F93EA",
+        "pop": "#38D39F"
+      },
+      "signatureStates": [
+        "security-scanning",
+        "security-locked",
+        "security-alert"
+      ]
+    }
+  },
+  "variants": [
+    "color",
+    "dark",
+    "light"
+  ],
+  "commonStates": [
+    "idle",
+    "hello",
+    "listening",
+    "thinking",
+    "searching",
+    "working",
+    "speaking",
+    "sending",
+    "paused",
+    "cancelled",
+    "done",
+    "notification",
+    "confused",
+    "error",
+    "sleeping",
+    "celebrate"
+  ],
+  "states": {
+    "idle": {
+      "label": "Idle",
+      "when": "Resting, waiting for input",
+      "character": "any",
+      "loopSeconds": 6,
+      "oneShot": false,
+      "then": null
+    },
+    "hello": {
+      "label": "Hello / wake",
+      "when": "App launch, wake word heard, greeting",
+      "character": "any",
+      "loopSeconds": 2.4,
+      "oneShot": true,
+      "then": "idle"
+    },
+    "listening": {
+      "label": "Listening",
+      "when": "Microphone open, user is speaking",
+      "character": "any",
+      "loopSeconds": 2.4,
+      "oneShot": false,
+      "then": null
+    },
+    "thinking": {
+      "label": "Thinking",
+      "when": "Model is reasoning / generating a plan",
+      "character": "any",
+      "loopSeconds": 3,
+      "oneShot": false,
+      "then": null
+    },
+    "searching": {
+      "label": "Searching",
+      "when": "Web / file / memory search, tool lookups",
+      "character": "any",
+      "loopSeconds": 3.2,
+      "oneShot": false,
+      "then": null
+    },
+    "working": {
+      "label": "Working / loading",
+      "when": "Long task running, tool executing, loading",
+      "character": "any",
+      "loopSeconds": 1.6,
+      "oneShot": false,
+      "then": null
+    },
+    "speaking": {
+      "label": "Speaking",
+      "when": "TTS audio is playing",
+      "character": "any",
+      "loopSeconds": 1.2,
+      "oneShot": false,
+      "then": null
+    },
+    "sending": {
+      "label": "Sending",
+      "when": "Prompt submitted (Enter / send button)",
+      "character": "any",
+      "loopSeconds": 1.6,
+      "oneShot": true,
+      "then": "thinking"
+    },
+    "paused": {
+      "label": "Paused",
+      "when": "User paused the agent / playback",
+      "character": "any",
+      "loopSeconds": 3,
+      "oneShot": false,
+      "then": null
+    },
+    "cancelled": {
+      "label": "Cancelled",
+      "when": "User cancelled / task aborted",
+      "character": "any",
+      "loopSeconds": 1.8,
+      "oneShot": true,
+      "then": "idle"
+    },
+    "done": {
+      "label": "Done / success",
+      "when": "Task finished successfully",
+      "character": "any",
+      "loopSeconds": 2.4,
+      "oneShot": true,
+      "then": "idle"
+    },
+    "notification": {
+      "label": "Notification",
+      "when": "New message, reminder, something needs attention",
+      "character": "any",
+      "loopSeconds": 2.2,
+      "oneShot": false,
+      "then": null
+    },
+    "confused": {
+      "label": "Confused",
+      "when": "Didn't understand, low confidence, needs clarification",
+      "character": "any",
+      "loopSeconds": 3,
+      "oneShot": false,
+      "then": null
+    },
+    "error": {
+      "label": "Error",
+      "when": "Something failed (network, tool, permission)",
+      "character": "any",
+      "loopSeconds": 2,
+      "oneShot": false,
+      "then": null
+    },
+    "sleeping": {
+      "label": "Sleeping",
+      "when": "Idle for a long time, do-not-disturb, mic muted",
+      "character": "any",
+      "loopSeconds": 4,
+      "oneShot": false,
+      "then": null
+    },
+    "celebrate": {
+      "label": "Celebrate",
+      "when": "Big win, streak, onboarding complete",
+      "character": "any",
+      "loopSeconds": 1.6,
+      "oneShot": false,
+      "then": null
+    },
+    "mail-incoming": {
+      "label": "New mail",
+      "when": "A new email arrived",
+      "character": "mail",
+      "loopSeconds": 2.4,
+      "oneShot": false,
+      "then": null
+    },
+    "mail-sending": {
+      "label": "Sending mail",
+      "when": "An email is being sent",
+      "character": "mail",
+      "loopSeconds": 2,
+      "oneShot": false,
+      "then": null
+    },
+    "mail-reading": {
+      "label": "Reading mail",
+      "when": "Reading, summarising or sorting the inbox",
+      "character": "mail",
+      "loopSeconds": 3,
+      "oneShot": false,
+      "then": null
+    },
+    "social-typing": {
+      "label": "Typing a reply",
+      "when": "Drafting a chat or social reply",
+      "character": "social",
+      "loopSeconds": 1.8,
+      "oneShot": false,
+      "then": null
+    },
+    "social-message": {
+      "label": "New message",
+      "when": "New WhatsApp / DM / mention",
+      "character": "social",
+      "loopSeconds": 2.6,
+      "oneShot": false,
+      "then": null
+    },
+    "social-react": {
+      "label": "Reacting",
+      "when": "Liking, reacting, posting",
+      "character": "social",
+      "loopSeconds": 2,
+      "oneShot": false,
+      "then": null
+    },
+    "files-organizing": {
+      "label": "Organising files",
+      "when": "Moving, renaming, sorting files",
+      "character": "files",
+      "loopSeconds": 2.4,
+      "oneShot": false,
+      "then": null
+    },
+    "files-upload": {
+      "label": "Uploading / saving",
+      "when": "Uploading, saving, exporting a file",
+      "character": "files",
+      "loopSeconds": 1.8,
+      "oneShot": false,
+      "then": null
+    },
+    "files-found": {
+      "label": "File found",
+      "when": "The file or document was found / opened",
+      "character": "files",
+      "loopSeconds": 2.2,
+      "oneShot": false,
+      "then": null
+    },
+    "memory-saving": {
+      "label": "Remembering",
+      "when": "Saving a fact or preference to memory",
+      "character": "memory",
+      "loopSeconds": 2.4,
+      "oneShot": false,
+      "then": null
+    },
+    "memory-recalling": {
+      "label": "Recalling",
+      "when": "Looking something up in memory, \"I remember…\"",
+      "character": "memory",
+      "loopSeconds": 2.6,
+      "oneShot": false,
+      "then": null
+    },
+    "memory-linking": {
+      "label": "Connecting memories",
+      "when": "Building context, linking notes and past conversations",
+      "character": "memory",
+      "loopSeconds": 3,
+      "oneShot": false,
+      "then": null
+    },
+    "harness-running": {
+      "label": "Running tools",
+      "when": "A tool call / command / pipeline step is running",
+      "character": "harness",
+      "loopSeconds": 1.6,
+      "oneShot": false,
+      "then": null
+    },
+    "harness-testing": {
+      "label": "Running checks",
+      "when": "Tests, evals or validations are running",
+      "character": "harness",
+      "loopSeconds": 2.8,
+      "oneShot": false,
+      "then": null
+    },
+    "harness-building": {
+      "label": "Building",
+      "when": "Writing code, scaffolding, deploying",
+      "character": "harness",
+      "loopSeconds": 2,
+      "oneShot": false,
+      "then": null
+    },
+    "security-scanning": {
+      "label": "Scanning",
+      "when": "Checking permissions, scanning a file / link / request",
+      "character": "security",
+      "loopSeconds": 2.4,
+      "oneShot": false,
+      "then": null
+    },
+    "security-locked": {
+      "label": "Secured",
+      "when": "Verified, encrypted, access locked",
+      "character": "security",
+      "loopSeconds": 2.2,
+      "oneShot": false,
+      "then": null
+    },
+    "security-alert": {
+      "label": "Security alert",
+      "when": "Risky action, suspicious request, permission needed",
+      "character": "security",
+      "loopSeconds": 1.6,
+      "oneShot": false,
+      "then": null
+    }
+  },
+  "extraThemes": {
+    "terracotta": {
+      "label": "Terracotta (brand)",
+      "body": "#BA5B45",
+      "eye": "#FBF8F4",
+      "accent": "#1F2224",
+      "onAccent": "#FBF8F4",
+      "blush": "#F3A791"
+    },
+    "dark": {
+      "label": "Dark",
+      "body": "#1F2224",
+      "eye": "#FBF8F4",
+      "accent": "#D06A51",
+      "onAccent": "#FBF8F4",
+      "blush": "#D06A51",
+      "stroke": "#4A5055",
+      "strokeWidth": 3
+    },
+    "light": {
+      "label": "Light",
+      "body": "#FBF8F4",
+      "eye": "#1F2224",
+      "accent": "#BA5B45",
+      "onAccent": "#FBF8F4",
+      "blush": "#F0B4A2",
+      "stroke": "#1F2224",
+      "strokeWidth": 5
+    },
+    "snow": {
+      "label": "Snow (mono, for dark UIs)",
+      "body": "#FFFFFF",
+      "eye": "#111315",
+      "accent": "#FFFFFF",
+      "onAccent": "#111315",
+      "blush": "#C9CED3",
+      "stroke": "#D5DADF",
+      "strokeWidth": 3
+    },
+    "aurora": {
+      "label": "Aurora (multi)",
+      "body": [
+        "#7C5CFF",
+        "#22D3EE",
+        "#34D399"
+      ],
+      "eye": "#FFFFFF",
+      "accent": "#7C5CFF",
+      "onAccent": "#FFFFFF",
+      "blush": "#C4B5FD"
+    },
+    "sunset": {
+      "label": "Sunset (multi)",
+      "body": [
+        "#FFB347",
+        "#FF5E7E",
+        "#8B5CF6"
+      ],
+      "eye": "#FFFFFF",
+      "accent": "#FF5E7E",
+      "onAccent": "#FFFFFF",
+      "blush": "#FFD3A6"
+    },
+    "ocean": {
+      "label": "Ocean (multi)",
+      "body": [
+        "#38BDF8",
+        "#2563EB",
+        "#1E1B4B"
+      ],
+      "eye": "#FFFFFF",
+      "accent": "#38BDF8",
+      "onAccent": "#0B1220",
+      "blush": "#93C5FD"
+    },
+    "candy": {
+      "label": "Candy (multi)",
+      "body": [
+        "#F9A8D4",
+        "#FDE68A",
+        "#A7F3D0"
+      ],
+      "eye": "#3B2A4A",
+      "accent": "#EC4899",
+      "onAccent": "#FFFFFF",
+      "blush": "#FB7185"
+    },
+    "neon": {
+      "label": "Neon (dark multi)",
+      "body": "#0D0F12",
+      "eye": [
+        "#39FF9C",
+        "#22D3EE"
+      ],
+      "accent": "#FF3DCB",
+      "onAccent": "#0D0F12",
+      "blush": "#FF3DCB",
+      "stroke": [
+        "#39FF9C",
+        "#22D3EE",
+        "#FF3DCB"
+      ],
+      "strokeWidth": 3.5
+    }
+  },
+  "shapes": [
+    "aegi",
+    "mail",
+    "social",
+    "files",
+    "memory",
+    "harness",
+    "security",
+    "leaf",
+    "orb",
+    "squircle",
+    "blob",
+    "drop",
+    "aegis"
+  ],
+  "statusColors": {
+    "idle": null,
+    "hello": "#22C55E",
+    "listening": "#EF4444",
+    "thinking": "#F59E0B",
+    "searching": "#F59E0B",
+    "working": "#3B82F6",
+    "speaking": "#22C55E",
+    "sending": "#3B82F6",
+    "paused": "#9CA3AF",
+    "cancelled": "#9CA3AF",
+    "done": "#22C55E",
+    "notification": "#EF4444",
+    "confused": "#F59E0B",
+    "error": "#DC2626",
+    "sleeping": "#6B7280",
+    "celebrate": "#22C55E",
+    "mail-incoming": "#EF4444",
+    "mail-sending": "#3B82F6",
+    "mail-reading": "#F59E0B",
+    "social-typing": "#3B82F6",
+    "social-message": "#EF4444",
+    "social-react": "#22C55E",
+    "files-organizing": "#3B82F6",
+    "files-upload": "#3B82F6",
+    "files-found": "#22C55E",
+    "memory-saving": "#3B82F6",
+    "memory-recalling": "#22C55E",
+    "memory-linking": "#F59E0B",
+    "harness-running": "#3B82F6",
+    "harness-testing": "#F59E0B",
+    "harness-building": "#3B82F6",
+    "security-scanning": "#F59E0B",
+    "security-locked": "#22C55E",
+    "security-alert": "#DC2626"
+  },
+  "statusText": {
+    "idle": [
+      "Ready",
+      "Say “Hey Aegis” or press the mic"
+    ],
+    "hello": [
+      "Hi!",
+      "Aegis is online"
+    ],
+    "listening": [
+      "Listening…",
+      "Go ahead, I’m listening"
+    ],
+    "thinking": [
+      "Thinking…",
+      "Working out a plan"
+    ],
+    "searching": [
+      "Searching…",
+      "Looking things up"
+    ],
+    "working": [
+      "Working…",
+      "Running the task"
+    ],
+    "speaking": [
+      "Speaking",
+      "Answering out loud"
+    ],
+    "sending": [
+      "Sending…",
+      "Got it"
+    ],
+    "paused": [
+      "Paused",
+      "Press resume to continue"
+    ],
+    "cancelled": [
+      "Cancelled",
+      "Stopped"
+    ],
+    "done": [
+      "Done",
+      "Task finished"
+    ],
+    "notification": [
+      "Heads up",
+      "Something needs your attention"
+    ],
+    "confused": [
+      "Sorry?",
+      "I didn’t catch that"
+    ],
+    "error": [
+      "Something went wrong",
+      "Try again"
+    ],
+    "sleeping": [
+      "Sleeping",
+      "Do not disturb is on"
+    ],
+    "celebrate": [
+      "Nice!",
+      "That went well"
+    ]
+  },
+  "widgets": [
+    "pill",
+    "pet",
+    "panel",
+    "card",
+    "toast"
+  ],
+  "sounds": {
+    "tap": {
+      "label": "Key tap",
+      "when": "Enter key pressed, button pressed, any small click",
+      "seconds": 0.12,
+      "loop": false
+    },
+    "send": {
+      "label": "Send",
+      "when": "Prompt sent (Enter / send button)",
+      "seconds": 0.5,
+      "loop": false
+    },
+    "send-soft": {
+      "label": "Send (alt, softer)",
+      "when": "Alternative send sound — quieter, for frequent sends",
+      "seconds": 0.5,
+      "loop": false
+    },
+    "receive": {
+      "label": "Message received",
+      "when": "Agent reply arrives / first token",
+      "seconds": 0.5,
+      "loop": false
+    },
+    "listen-start": {
+      "label": "Listening on",
+      "when": "Mic opens / wake word detected",
+      "seconds": 0.45,
+      "loop": false
+    },
+    "listen-stop": {
+      "label": "Listening off",
+      "when": "Mic closes / end of speech detected",
+      "seconds": 0.45,
+      "loop": false
+    },
+    "pause": {
+      "label": "Pause",
+      "when": "User pauses the agent / playback",
+      "seconds": 0.6,
+      "loop": false
+    },
+    "resume": {
+      "label": "Resume",
+      "when": "User resumes after a pause",
+      "seconds": 0.6,
+      "loop": false
+    },
+    "cancel": {
+      "label": "Cancel",
+      "when": "User cancels / stops the task",
+      "seconds": 0.45,
+      "loop": false
+    },
+    "done": {
+      "label": "Done",
+      "when": "Task finished — the main \"work is done\" alert",
+      "seconds": 1.3,
+      "loop": false
+    },
+    "notify": {
+      "label": "Notification",
+      "when": "Reminder, incoming notification, needs attention",
+      "seconds": 1.1,
+      "loop": false
+    },
+    "error": {
+      "label": "Error",
+      "when": "Something failed",
+      "seconds": 0.6,
+      "loop": false
+    },
+    "confused": {
+      "label": "Confused",
+      "when": "Didn't understand — ask the user to repeat",
+      "seconds": 0.65,
+      "loop": false
+    },
+    "wake": {
+      "label": "Wake / startup",
+      "when": "App launch, agent comes online",
+      "seconds": 1.5,
+      "loop": false
+    },
+    "sleep": {
+      "label": "Sleep / shutdown",
+      "when": "Agent goes idle, do-not-disturb on, app closing",
+      "seconds": 1.3,
+      "loop": false
+    },
+    "celebrate": {
+      "label": "Celebrate",
+      "when": "Big success, milestone",
+      "seconds": 1.6,
+      "loop": false
+    },
+    "thinking-loop": {
+      "label": "Thinking (loop)",
+      "when": "Optional quiet bed while the agent works — loops seamlessly",
+      "seconds": 2,
+      "loop": true
+    }
+  },
+  "packs": [
+    "warm",
+    "crystal"
+  ],
+  "events": {
+    "app:start": {
+      "state": "hello",
+      "sound": "wake"
+    },
+    "key:enter": {
+      "state": null,
+      "sound": "tap"
+    },
+    "prompt:send": {
+      "state": "sending",
+      "sound": "send"
+    },
+    "mic:start": {
+      "state": "listening",
+      "sound": "listen-start"
+    },
+    "mic:stop": {
+      "state": "thinking",
+      "sound": "listen-stop"
+    },
+    "agent:thinking": {
+      "state": "thinking",
+      "sound": null
+    },
+    "agent:searching": {
+      "state": "searching",
+      "sound": null
+    },
+    "agent:working": {
+      "state": "working",
+      "sound": null
+    },
+    "agent:reply": {
+      "state": "speaking",
+      "sound": "receive"
+    },
+    "agent:speaking": {
+      "state": "speaking",
+      "sound": null
+    },
+    "agent:confused": {
+      "state": "confused",
+      "sound": "confused"
+    },
+    "agent:done": {
+      "state": "done",
+      "sound": "done"
+    },
+    "agent:error": {
+      "state": "error",
+      "sound": "error"
+    },
+    "agent:celebrate": {
+      "state": "celebrate",
+      "sound": "celebrate"
+    },
+    "user:pause": {
+      "state": "paused",
+      "sound": "pause"
+    },
+    "user:resume": {
+      "state": "working",
+      "sound": "resume"
+    },
+    "user:cancel": {
+      "state": "cancelled",
+      "sound": "cancel"
+    },
+    "notify": {
+      "state": "notification",
+      "sound": "notify"
+    },
+    "app:idle": {
+      "state": "idle",
+      "sound": null
+    },
+    "app:sleep": {
+      "state": "sleeping",
+      "sound": "sleep"
+    },
+    "mail:new": {
+      "character": "mail",
+      "state": "mail-incoming",
+      "sound": "notify"
+    },
+    "mail:read": {
+      "character": "mail",
+      "state": "mail-reading",
+      "sound": null
+    },
+    "mail:send": {
+      "character": "mail",
+      "state": "mail-sending",
+      "sound": "send"
+    },
+    "social:message": {
+      "character": "social",
+      "state": "social-message",
+      "sound": "receive"
+    },
+    "social:typing": {
+      "character": "social",
+      "state": "social-typing",
+      "sound": null
+    },
+    "social:react": {
+      "character": "social",
+      "state": "social-react",
+      "sound": "tap"
+    },
+    "files:organize": {
+      "character": "files",
+      "state": "files-organizing",
+      "sound": null
+    },
+    "files:upload": {
+      "character": "files",
+      "state": "files-upload",
+      "sound": "send-soft"
+    },
+    "files:found": {
+      "character": "files",
+      "state": "files-found",
+      "sound": "done"
+    },
+    "memory:save": {
+      "character": "memory",
+      "state": "memory-saving",
+      "sound": "send-soft"
+    },
+    "memory:recall": {
+      "character": "memory",
+      "state": "memory-recalling",
+      "sound": "receive"
+    },
+    "memory:link": {
+      "character": "memory",
+      "state": "memory-linking",
+      "sound": null
+    },
+    "harness:run": {
+      "character": "harness",
+      "state": "harness-running",
+      "sound": "tap"
+    },
+    "harness:test": {
+      "character": "harness",
+      "state": "harness-testing",
+      "sound": null
+    },
+    "harness:build": {
+      "character": "harness",
+      "state": "harness-building",
+      "sound": null
+    },
+    "security:scan": {
+      "character": "security",
+      "state": "security-scanning",
+      "sound": null
+    },
+    "security:locked": {
+      "character": "security",
+      "state": "security-locked",
+      "sound": "done"
+    },
+    "security:alert": {
+      "character": "security",
+      "state": "security-alert",
+      "sound": "error"
+    },
+    "crew:lead": {
+      "character": "aegi",
+      "state": "hello",
+      "sound": "wake"
+    }
+  }
+}

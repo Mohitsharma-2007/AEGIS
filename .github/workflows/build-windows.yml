@@ -1,0 +1,62 @@
+name: build-windows
+
+# Builds the Aegis host bundle and the Electron desktop installer on Windows.
+# No signing certificate is available in CI, so the installer is unsigned; the
+# checksum is printed for the artifact instead.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install host dependencies
+        working-directory: apps/host
+        run: npm ci
+
+      - name: Typecheck and build the host
+        working-directory: apps/host
+        run: |
+          npm run typecheck
+          npm run build
+
+      - name: Install desktop dependencies
+        working-directory: apps/desktop
+        run: npm ci
+
+      - name: Generate icons
+        working-directory: apps/desktop
+        run: python scripts/make-icon.py
+
+      - name: Package the installer
+        working-directory: apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win
+
+      - name: Report the artifact
+        working-directory: apps/desktop
+        run: |
+          Get-ChildItem release/*.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            Write-Host "$($_.Name)  $($_.Length) bytes  sha256=$hash"
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aegis-windows-installer
+          path: apps/desktop/release/*.exe
+          if-no-files-found: error

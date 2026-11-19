@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="386" viewBox="0 0 620 386">
+<defs><pattern id="g" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".85" fill="#9db5a9" opacity=".55"/></pattern><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="m0 0 6 3-6 3z" fill="#547d72"/></marker></defs>
+<rect width="620" height="386" fill="#ecf0e6"/><rect width="620" height="386" fill="url(#g)"/><rect width="620" height="52" fill="#d7e5db"/><rect x="23" y="18" width="20" height="19" rx="4" fill="#7a9c91"/><text x="53" y="32" font-family="sans-serif" font-size="13" font-weight="700" fill="#3b6759">PROCESS NOTES</text>
+<text x="26" y="115" fill="#2c4e42" font-family="sans-serif" font-size="39" font-weight="700" letter-spacing="-1.3">Water filtration</text><text x="28" y="144" fill="#54796a" font-family="sans-serif" font-size="14">From intake to cleaner water</text>
+<g stroke="#87aba0" stroke-width="2"><rect x="30" y="197" width="142" height="99" rx="12" fill="#dcf0e7"/><rect x="239" y="197" width="142" height="99" rx="12" fill="#e1e8ef"/><rect x="448" y="197" width="142" height="99" rx="12" fill="#f0e3d8"/></g>
+<g stroke="#547d72" stroke-width="3" marker-end="url(#a)"><path d="M185 243h41"/><path d="M394 243h41"/></g>
+<g fill="#466c60" font-family="sans-serif" font-size="17" font-weight="650" text-anchor="middle"><text x="101" y="252">Intake</text><text x="310" y="252">Filter bed</text><text x="519" y="252">Outlet</text></g>
+<text x="28" y="346" font-family="monospace" font-size="11" fill="#658575">SYSTEMS / FLOW</text>
+</svg>

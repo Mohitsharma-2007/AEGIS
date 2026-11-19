@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aegi widgets — desktop preview</title>
+<style>
+html,body{margin:0;height:100%}body{font:13px/1.4 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;overflow:hidden}
+#desk{position:relative;height:calc(100vh - var(--tabs,0px));min-height:680px;background:radial-gradient(1200px 700px at 70% 20%,#F6D9C9 0,#E9B9A2 35%,#BA5B45 100%);transition:background .3s}
+#desk.dk{background:radial-gradient(1200px 700px at 70% 20%,#3A4350 0,#1E242C 45%,#0C0E11 100%)}
+.lbl{position:absolute;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(31,34,36,.6);font-weight:600}.dk .lbl{color:rgba(255,255,255,.55)}
+#ctl{position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:330px;z-index:5}
+#ctl button,#ctl select{font:inherit;border:0;border-radius:9px;padding:7px 11px;background:rgba(255,255,255,.85);color:#1F2224;cursor:pointer}#ctl button.go{background:#1F2224;color:#fff}
+#card{position:absolute;left:16px;top:118px}#pill{position:absolute;left:50%;top:16px;transform:translateX(-50%)}
+#toasts{position:absolute;right:16px;top:16px;display:flex;flex-direction:column;gap:8px}
+#pet{position:absolute;right:400px;bottom:52px}#flyout{position:absolute;right:12px;bottom:60px;transition:opacity .2s,transform .2s}#flyout.hide{opacity:0;transform:translateY(12px);pointer-events:none}
+#taskbar{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(243,243,243,.86);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;gap:6px;border-top:1px solid rgba(0,0,0,.08)}
+.dk #taskbar{background:rgba(28,28,30,.86);color:#fff;border-top-color:rgba(255,255,255,.08)}
+.tb{width:40px;height:40px;border-radius:6px;display:grid;place-items:center}.tb:hover{background:rgba(127,127,127,.18)}.tb i{width:20px;height:20px;border-radius:5px;display:block}
+#tray{position:absolute;right:10px;top:0;height:48px;display:flex;align-items:center;gap:4px;font-size:12px}
+#tray .ic{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;cursor:pointer}#tray .ic:hover,#tray .ic.on{background:rgba(127,127,127,.22)}
+#clock{text-align:right;line-height:1.25;padding:0 8px}
+@media(max-width:900px){#pet{right:auto;left:40px}#card{top:150px}}
+</style></head><body>
+<div id="desk">
+  <div id="ctl"><button class="go" id="run">▶ Run voice flow</button><button id="ui">Light / dark</button>
+    <select id="who" style="max-width:150px"></select><select id="theme" style="max-width:110px"></select><label style="color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)"><input type="checkbox" id="snd" checked> sounds</label></div>
+  <div class="lbl" style="left:16px;top:96px">Task card widget</div><div id="card"></div>
+  <div id="pill"></div><div class="lbl" style="left:50%;top:80px;transform:translateX(-50%)">Pill (always on top)</div>
+  <div id="toasts"></div>
+  <div id="pet"></div>
+  <div id="flyout"></div>
+  <div id="taskbar">
+    <div class="tb"><i style="background:linear-gradient(135deg,#4CC2FF,#0067C0)"></i></div><div class="tb"><i style="background:#F5B301;border-radius:3px"></i></div>
+    <div class="tb"><i style="background:#34A853;border-radius:50%"></i></div><div class="tb"><i style="background:#7B61FF"></i></div>
+    <div id="tray"><span style="opacity:.6">⌃</span><div class="ic on" id="trayic" title="Aegis — click to open"><img id="trayimg" width="20" height="20" alt="Aegis"></div><div id="clock"></div></div>
+  </div>
+</div>
+<script>/*__LIB__*/</script>
+<script>
+const $ = id => document.getElementById(id);
+const sfx = new AegisSounds({ pack: 'warm', volume: 0.6 });
+let theme = 'color', ui = 'light', who = 'aegi';
+const mk = () => {
+  const pill = mountWidget('#pill', 'pill', { theme, ui, sounds: sfx }), pet = mountWidget('#pet', 'pet', { theme, ui, follow: true }),
+    panel = mountWidget('#flyout', 'panel', { theme, ui, sounds: sfx }), card = mountWidget('#card', 'card', { theme, ui });
+  return linkWidgets([pill, pet, panel, card]);
+};
+let hub = mk();
+[['color', 'Own colour'], ['dark', 'Dark'], ['light', 'Light']].forEach(([v, l]) => $('theme').add(new Option(l, v)));
+CHARACTER_NAMES.forEach(c => $('who').add(new Option(`${CHARACTERS[c].name} — ${CHARACTERS[c].role}`, c)));
+$('who').onchange = e => { who = e.target.value; hub.setCharacter(who); tray(hub.widgets[2].el.dataset.state); };
+const tray = s => { $('trayimg').src = 'data:image/svg+xml,' + encodeURIComponent(renderTrayIcon({ character: who, state: s, theme })); };
+new MutationObserver(() => tray(hub.widgets[2].el.dataset.state)).observe($('flyout'), { attributes: true, subtree: true, attributeFilter: ['data-state'] });
+tray('idle');
+$('theme').onchange = e => { theme = e.target.value; hub.setTheme(theme); tray(hub.widgets[2].el.dataset.state); };
+$('ui').onclick = () => { ui = ui === 'light' ? 'dark' : 'light'; hub.setUI(ui); $('desk').classList.toggle('dk', ui === 'dark'); };
+$('snd').onchange = e => { sfx.enabled = e.target.checked; };
+$('trayic').onclick = () => { $('flyout').classList.toggle('hide'); $('trayic').classList.toggle('on'); };
+setInterval((f => (f(), f))(() => { const d = new Date(); $('clock').innerHTML = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '<br>' + d.toLocaleDateString(); }), 20000);
+
+// ---- simulated voice-agent run (your real pipeline calls the same hub methods) ----
+const STEPS = ['Search nearby cafés', 'Compare ratings', 'Write the summary'], steps = n => STEPS.map((label, i) => ({ label, state: i < n ? 'done' : i === n ? 'active' : 'todo' }));
+const ASK = 'Find the three best-rated cafés near Agra Fort and send me a summary.';
+const FLOW = [
+  [0, () => { hub.update({ transcript: [], steps: [], progress: 0 }); hub.emit('mic:start'); }],
+  [2400, () => { hub.say('user', ASK); hub.emit('mic:stop'); }],
+  [3100, () => hub.emit('prompt:send')],
+  [4900, () => { hub.emit('agent:searching'); hub.update({ steps: steps(0), sub: STEPS[0] }); }],
+  [7300, () => { hub.emit('agent:working'); hub.update({ steps: steps(1), sub: STEPS[1], progress: 0.4 }); }],
+  [8900, () => hub.update({ steps: steps(2), sub: STEPS[2], progress: 0.75 })],
+  [10400, () => { hub.emit('agent:reply'); hub.say('agent', 'I found three: Sheroes Hangout (4.8), The Salt Café (4.6) and Café Sai (4.5). The summary is in your inbox.'); hub.update({ steps: steps(3), progress: 1 }); }],
+  [13400, () => { hub.emit('agent:done'); toast('#toasts', { state: 'done', status: 'Task finished', sub: 'Café summary sent to your inbox', theme, ui, timeout: 4500 }); }],
+  [16200, () => hub.emit('app:idle')],
+];
+let timers = [], started = 0, pausedAt = 0, from = 0;
+const clear = () => { timers.forEach(clearTimeout); timers = []; };
+const run = (offset = 0) => { clear(); started = Date.now() - offset; from = offset; FLOW.filter(([at]) => at >= offset).forEach(([at, fn]) => timers.push(setTimeout(fn, at - offset))); };
+$('run').onclick = () => run(0);
+const wire = () => hub.on('mic', () => run(0)).on('send', (_a, text) => { clear(); hub.update({ steps: [], progress: 0 }); hub.say('user', text); run(3100); })
+  .on('pause', () => { pausedAt = Date.now() - started; clear(); hub.emit('user:pause'); }).on('resume', () => { hub.emit('user:resume'); run(pausedAt); })
+  .on('cancel', () => { clear(); hub.emit('user:cancel'); hub.update({ steps: [], progress: 0 }); setTimeout(() => hub.emit('app:idle'), 2200); })
+  .on('close', () => $('trayic').click());
+wire();
+window.__desk = () => hub;
+</script></body></html>

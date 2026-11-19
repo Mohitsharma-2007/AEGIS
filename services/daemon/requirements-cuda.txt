@@ -1,0 +1,16 @@
+# Optional NVIDIA CUDA runtime wheels for faster-whisper on Windows.
+#
+# faster-whisper/ctranslate2 loads cuBLAS, cuDNN and the CUDA runtime lazily.
+# On a machine without a system CUDA toolkit these wheels provide the DLLs;
+# voice_pipeline.py adds their site-packages\nvidia\*\bin folders to the Windows
+# DLL search path before the model loads.
+#
+# Install only when you have a supported NVIDIA GPU and a matching driver:
+#   .venv311\Scripts\python.exe -m pip install -r requirements-cuda.txt
+#
+# Without this file the pipeline still works: WHISPER_DEVICE=auto selects the
+# CPU model (small/int8) when CUDA is not usable.
+nvidia-cublas-cu12>=12.4
+nvidia-cudnn-cu12==9.*
+nvidia-cuda-runtime-cu12>=12.4
+nvidia-cuda-nvrtc-cu12>=12.4

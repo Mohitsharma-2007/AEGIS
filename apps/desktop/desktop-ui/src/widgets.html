@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com;" />
+    <title>Aegis widgets</title>
+    <style>
+/*CSS*/
+.board{max-height:100%;display:flex;flex-direction:column;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);border-radius:28px;overflow:hidden;position:relative}
+html.preview .board{width:min(960px,96vw);max-height:none;margin:20px auto 70px}
+.top{display:flex;align-items:center;gap:9px;padding:10px 12px 9px;-webkit-app-region:drag;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--card) 40%,transparent)}
+.top>*{-webkit-app-region:no-drag}.top .who{-webkit-app-region:drag;flex:1;min-width:0;display:grid;gap:1px}
+.top .acts{display:flex;align-items:center;gap:3px;padding-left:8px;margin-left:2px;border-left:1px solid var(--line)}.top .acts>*{-webkit-app-region:no-drag}
+.top .acts .btn.ic{background:transparent;color:var(--dim)}.top .acts .btn.ic:hover{background:var(--card2);color:var(--text)}.top .acts .btn.ic svg.i{width:14px;height:14px}
+.top .who b{font-size:13px;font-weight:650;display:flex;align-items:center;gap:7px}.top .who b em{font-style:normal;font-size:10.5px;font-weight:600;color:var(--state)}
+.top .who small{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mascot-img{cursor:pointer}
+.deck{columns:286px;column-gap:9px;padding:2px 10px 10px;overflow-y:auto;min-height:0}
+.deck .w{margin:0 0 9px;display:inline-block;width:100%}
+.wh{position:absolute;right:8px;top:8px;width:20px;height:20px;border-radius:50%;border:0;background:var(--red);color:#fff;display:none;place-items:center;cursor:pointer;padding:0;z-index:3}.wh svg{width:11px;height:11px}
+.board.edit .wh{display:grid}.board.edit .w{animation:jig .35s ease-in-out infinite alternate}@keyframes jig{from{transform:rotate(-.35deg)}to{transform:rotate(.35deg)}}
+.hidden-row{display:none;flex-wrap:wrap;gap:6px;padding:0 12px 10px}.board.edit .hidden-row{display:flex}.hidden-row span{font-size:10.5px;color:var(--dim);align-self:center}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:0 12px 12px}.scroll .deck{padding:0;overflow:visible}#tiles{margin-bottom:10px}#tiles:empty{display:none}
+@media(max-width:560px){.top{gap:6px;padding:7px 8px 6px}.top .who small{max-width:38vw}.scroll{padding:0 9px 9px}.deck{column-gap:7px}}
+.board.edit #tiles .x{animation:jig .35s ease-in-out infinite alternate}@keyframes jig{from{transform:rotate(-.6deg)}to{transform:rotate(.6deg)}}
+.libp{display:none;flex-direction:column;gap:8px;flex:1;min-height:0;padding:0 12px 12px}.board.lib .libp{display:flex}.board.lib .scroll,.board.lib .hidden-row{display:none}
+.libh{display:flex;align-items:center;gap:10px}.lcats{display:flex;flex-wrap:wrap;gap:5px}.lcats button{height:24px;padding:0 10px;border-radius:99px;border:0;background:var(--card2);color:var(--dim);font:inherit;font-size:10.5px;font-weight:600;cursor:pointer}.lcats button.on{background:var(--accent);color:#fff}
+#lgrid{overflow-y:auto;flex:1;min-height:0;align-content:start;max-height:560px}#lgrid .x{cursor:pointer;transition:transform .15s,border-color .15s}#lgrid .x:hover{transform:translateY(-2px);border-color:var(--line2)}#lgrid .x.pin{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}#lgrid .x.pin::after{content:"✓";position:absolute;right:8px;top:7px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;display:grid;place-items:center}
+#lgrid .x *{pointer-events:none}
+@media(max-width:620px){.board{padding:10px!important}.xgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}.x{min-width:0}.top{flex-wrap:wrap;gap:8px}}
+@media(max-width:380px){.xgrid{grid-template-columns:1fr!important}}
+</style>
+  </head>
+  <body>
+    <div class="board" id="board">
+      <div class="top">
+        <span id="mascot-img" title="Say hi"></span>
+        <div class="who"><b>Aegis <span class="dot"></span><em id="chip"><span id="status">Ready</span></em></b><small id="task" data-testid="transcript"><span id="transcript">Ready for tasks. Ask Aegis anything or start voice.</span></small></div>
+        <button class="btn p" id="voice" data-i="mic"><span id="voice-t">Talk</span></button>
+        <span class="acts">
+          <button class="btn" id="lib" data-i="plus"><span id="lib-t">Add widgets</span></button>
+          <button class="btn ic" id="edit" title="Choose widgets" data-i="gear"></button>
+          <button class="btn ic" id="open" title="Open Aegis" data-i="open"></button>
+          <button class="btn ic" id="notch" title="Toggle notch" data-i="notch"></button>
+          <button class="btn ic" id="mascot" title="Toggle mascot" data-i="pet"></button>
+          <button class="btn ic" id="hide" title="Hide widgets" data-i="x"></button>
+        </span>
+      </div>
+      <div class="hidden-row" id="hidden-row"></div>
+      <div class="libp" id="libp">
+        <div class="libh"><div class="ask" style="flex:1"><input id="lq" placeholder="Search 300+ widgets…" maxlength="60"/></div><span class="s" id="lcount"></span><button class="btn p" id="ldone">Done</button></div>
+        <div class="lcats" id="lcats"></div>
+        <div class="xgrid noscroll" id="lgrid"></div>
+      </div>
+      <div class="scroll noscroll" id="scroll"><div class="xgrid" id="tiles"></div><div class="deck" id="deck"></div></div>
+    </div>
+    <script>
+/*ENGINE*/
+    </script>
+    <script>
+/*CORE*/
+/*CARDS*/
+/*LIB*/
+(() => {
+  const { $, st, on, api, setHover, store } = A, board = $('#board');
+  const NAMES = { ask: 'Ask anything', agent: 'Agent activity', research: 'Execution steps', agents: 'Agents', notes: 'Activity', voice: 'Voice pipeline', clock: 'Clock & status', weather: 'Weather', schedule: 'Today', media: 'Music player', timer: 'Timers', alarms: 'Alarms', system: 'GPU / system', security: 'Security', model: 'Model provider', conversations: 'Conversations', meeting: 'Meeting', call: 'Call agent', live: 'Live activities', tracking: 'Tracking', navigation: 'Navigation', devices: 'Devices', health: 'Health', market: 'Market', payment: 'Payments', assistant: 'Assistant' };
+  const pet = A.mascot($('#mascot-img'), 36, { shadow: false, lively: true }); Cards.mount($('#deck'), Object.keys(NAMES));
+  board.addEventListener('mouseenter', () => setHover(true)); board.addEventListener('mouseleave', () => { if (document.activeElement && document.activeElement.tagName === 'INPUT') return; setHover(false); });
+  document.addEventListener('mouseleave', () => setHover(false)); setHover(false);
+  const hiddenRow = () => { const h = store.get('aegis.w.hidden', []); $('#hidden-row').innerHTML = h.length ? '<span>Hidden:</span>' + h.map(id => `<button class="btn" data-show="${id}">+ ${NAMES[id] || id}</button>`).join('') : '<span>Tap the red × on a widget to hide it. Widgets without data stay hidden automatically.</span>'; };
+  $('#deck').addEventListener('cards', hiddenRow);
+  $('#hidden-row').addEventListener('click', e => { const id = e.target.dataset.show; if (!id) return; const h = store.get('aegis.w.hidden', []); store.set('aegis.w.hidden', h.filter(x => x !== id)); Cards.refreshAll(); });
+  $('#edit').addEventListener('click', () => { board.classList.toggle('edit'); hiddenRow(); });
+  on('change', s => { $('#status').textContent = s.label; $('#transcript').textContent = s.text || 'Ready for tasks. Ask Aegis anything or start voice.'; $('#voice-t').textContent = s.listening ? 'Stop' : 'Talk'; });
+  on('notify', () => pet.hop());
+  $('#mascot-img').addEventListener('click', () => { pet.hop(); pet.react(['hello', 'celebrate'][Math.floor(Math.random() * 2)]); });
+  $('#voice').addEventListener('click', () => { setHover(true); A.toggleVoice(); });
+  $('#open').addEventListener('click', () => api?.show?.());
+  $('#notch').addEventListener('click', () => api?.toggleNotch?.());
+  $('#mascot').addEventListener('click', () => api?.toggleMascot?.());
+  $('#hide').addEventListener('click', () => api?.hideWidgets?.());
+  // ---- widget library: 300+ tiles, pin the ones you want ----
+  const tiles = $('#tiles'), lgrid = $('#lgrid'); let lcat = 'All', lastT = '', lastL = '';
+  const drawTiles = () => { const h = Lib.pinned().map(id => Lib.tile(id, { edit: board.classList.contains('edit') })).join(''); if (h !== lastT) { lastT = h; tiles.innerHTML = h; } };
+  const drawLib = () => { if (!board.classList.contains('lib')) return; const q = $('#lq').value.trim().toLowerCase(), pin = Lib.pinned(), list = Lib.CAT.filter(d => (lcat === 'All' || (lcat === 'Pinned' ? pin.includes(d.id) : d.cat === lcat)) && (!q || (d.title + ' ' + d.cat).toLowerCase().includes(q)));
+    $('#lcount').textContent = list.length + ' of ' + Lib.count + ' · ' + pin.length + ' pinned'; $('#lcats').innerHTML = ['All', 'Pinned', ...Lib.cats()].map(c => `<button class="${c === lcat ? 'on' : ''}" data-c="${c}">${c}</button>`).join('');
+    const h = list.map(d => Lib.tile(d.id, { pick: true }).replace('class="x ', `data-lib="pin:${d.id}" class="x ${pin.includes(d.id) ? 'pin ' : ''}`)).join('') || '<div class="s">No widget matches that search.</div>'; if (h !== lastL) { lastL = h; lgrid.innerHTML = h; } };
+  const toggleLib = on2 => { board.classList.toggle('lib', on2); $('#lib-t').textContent = on2 ? 'Close library' : 'Add widgets'; lastL = ''; drawLib(); drawTiles(); if (on2) setTimeout(() => $('#lq').focus(), 60); };
+  $('#lib').addEventListener('click', () => toggleLib(!board.classList.contains('lib'))); $('#ldone').addEventListener('click', () => toggleLib(false));
+  $('#lq').addEventListener('input', drawLib); $('#lq').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') toggleLib(false); }); $('#lq').addEventListener('focus', () => { setHover(true); api?.action?.('want-focus', true); }); $('#lq').addEventListener('blur', () => api?.action?.('want-focus', false));
+  $('#lcats').addEventListener('click', e => { if (e.target.dataset.c) { lcat = e.target.dataset.c; drawLib(); } });
+  lgrid.addEventListener('click', e => { if (Lib.click(e)) { lastL = ''; drawLib(); drawTiles(); } }); tiles.addEventListener('click', e => { if (Lib.click(e)) drawTiles(); });
+  $('#edit').addEventListener('click', () => { lastT = ''; drawTiles(); });
+  ['tick', 'data', 'change', 'weather'].forEach(n => on(n, () => { drawTiles(); drawLib(); }));
+  A.start(); drawTiles();
+})();
+    </script>
+  
+<script>
+/* Pointer routing for a transparent, click-through surface window: stay
+   click-through over empty space, become interactive over real controls.
+   Without this the notch/widgets buttons and the mascot were unclickable. */
+(() => {
+  let interactive = false;
+  const sample = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const isControl = !!el && el !== document.body && el !== document.documentElement;
+    if (isControl !== interactive) {
+      interactive = isControl;
+      (window.aegis && window.aegis.setClickThrough)
+        ? window.aegis.setClickThrough(!isControl)
+        : undefined;
+    }
+  };
+  document.addEventListener('mousemove', (e) => sample(e.clientX, e.clientY), true);
+  document.addEventListener('mouseleave', () => {
+    if (interactive) {
+      interactive = false;
+      if (window.aegis && window.aegis.setClickThrough) window.aegis.setClickThrough(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

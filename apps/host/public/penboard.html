@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:" />
+    <title>Aegis annotations</title>
+    <style>
+      /* Transparent, click-through teaching layer drawn above the desktop: Aegis's own cursor, highlights, hand-drawn diagrams, captions.
+         Nothing here takes the mouse. Bridge: window.aegisAnnotations.onDraw(payload) / onClear(). */
+      :root{color-scheme:dark;--accent:#E8714F;--blue:#5B9BF5;--green:#4ADE80;--amber:#F5B544;--violet:#A78BFA;--red:#F2555A;--pink:#F472B6;--cyan:#38D0E8;--white:#fff;--card:rgba(11,11,14,.94);--line:rgba(255,255,255,.16)}
+      html,body{margin:0;height:100%;background:transparent;overflow:hidden;user-select:none;pointer-events:none;font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif}
+      #stage{position:fixed;inset:0;opacity:0;transition:opacity .22s ease}#stage.on{opacity:1}
+      svg#svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+      #dim{fill:rgba(6,8,12,.5);opacity:0;transition:opacity .35s ease}#dim.on{opacity:1}
+      .ink{fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+      .glow{filter:drop-shadow(0 0 6px currentColor) drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+      .fillin{opacity:0;transition:opacity .5s ease}.fillin.on{opacity:1}
+      .lbl{font-weight:700;paint-order:stroke;stroke:rgba(0,0,0,.72);stroke-width:4px;stroke-linejoin:round;opacity:0;transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.4,.36,1);transform-box:fill-box;transform-origin:center;transform:scale(.6)}.lbl.on{opacity:1;transform:none}
+      .hl{animation:hlp 1.5s ease-in-out infinite}@keyframes hlp{50%{stroke-width:4.6;opacity:.75}}
+      .corner{stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;opacity:0;transition:opacity .3s}.corner.on{opacity:.95;animation:cn 1.2s ease-in-out infinite}@keyframes cn{50%{opacity:.45}}
+      .ripple{fill:none;stroke-width:2.5;animation:rp .7s ease-out forwards}@keyframes rp{from{r:4;opacity:1}to{r:34;opacity:0}}
+      /* Aegis's own mouse */
+      #cur{position:absolute;left:0;top:0;z-index:6;width:0;height:0;opacity:0;transition:opacity .25s ease;will-change:transform}#cur.on{opacity:1}
+      #cur svg{position:absolute;left:-3px;top:-2px;width:26px;height:28px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));transition:transform .12s ease;transform-origin:3px 2px}
+      #cur.down svg{transform:scale(.82)}#cur.pen svg{transform:rotate(-18deg)}
+      #cur b{position:absolute;left:18px;top:20px;padding:2px 8px 3px;border-radius:9px 9px 9px 3px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:650;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+      .trail{position:absolute;width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--accent);opacity:.5;animation:tr .5s ease-out forwards;z-index:5}@keyframes tr{to{opacity:0;transform:scale(.2)}}
+      .callout{position:absolute;z-index:4;max-width:270px;padding:9px 12px 10px;border-radius:14px;background:var(--card);border:1px solid var(--line);color:#F6F3EF;font-size:12.5px;line-height:1.45;box-shadow:0 12px 28px rgba(0,0,0,.5);opacity:0;transform:translateY(6px) scale(.96);transition:opacity .25s ease,transform .4s cubic-bezier(.34,1.4,.36,1)}.callout.on{opacity:1;transform:none}
+      .callout strong{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--c,var(--accent));margin-bottom:1px}.callout .next{display:block;margin-top:4px;color:rgba(246,243,239,.62);font-size:11px}
+      .num{flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:var(--c,var(--accent));color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center}
+      kbd{display:inline-block;margin:5px 4px 0 0;padding:1px 7px 2px;border-radius:6px;background:#26262c;border:1px solid rgba(255,255,255,.2);border-bottom-width:2px;font:600 11px "Segoe UI",sans-serif;color:#fff}
+      .step-badge{position:absolute;z-index:4;width:24px;height:24px;margin:-12px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:12px;font-weight:700;box-shadow:0 0 0 4px rgba(232,113,79,.28);animation:pop .4s cubic-bezier(.34,1.4,.36,1) both}@keyframes pop{from{transform:scale(0)}}
+      #cap{position:absolute;left:50%;bottom:26px;z-index:5;transform:translate(-50%,14px);width:max-content;max-width:min(680px,84vw);display:flex;align-items:flex-start;gap:11px;padding:11px 16px 12px 12px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:#F6F3EF;box-shadow:0 14px 34px rgba(0,0,0,.55);opacity:0;transition:opacity .25s ease,transform .45s cubic-bezier(.34,1.4,.36,1)}#cap.on{opacity:1;transform:translate(-50%,0)}#cap.top{bottom:auto;top:26px}
+      #cap .av{flex:0 0 30px;height:30px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#F08A68,#BA5B45);position:relative;margin-top:1px}#cap .av::before,#cap .av::after{content:"";position:absolute;top:11px;width:4px;height:6px;border-radius:2px;background:#fff;animation:bl 4s infinite}#cap .av::before{left:9px}#cap .av::after{right:9px}@keyframes bl{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+      #cap .tx{font-size:13.5px;line-height:1.5;min-width:0}#cap .hd{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:650;color:var(--accent);margin-bottom:1px}#cap .dots{display:flex;gap:4px}#cap .dots i{width:14px;height:3px;border-radius:2px;background:rgba(255,255,255,.2)}#cap .dots i.on{background:var(--accent)}
+      #cap .next{display:block;margin-top:3px;font-size:11.5px;color:rgba(246,243,239,.62)}
+      @media (prefers-reduced-motion:reduce){.hl,.corner.on{animation:none}}
+      /* ---- browser preview only: two fake apps to annotate ---- */
+      html.preview,html.preview body{pointer-events:auto;background:#101013}
+      #mock{position:fixed;inset:0;display:none}html.preview #mock{display:block}
+      #pvbar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9;display:none;gap:6px;padding:6px;border-radius:99px;background:rgba(10,10,12,.9);border:1px solid var(--line)}html.preview #pvbar{display:flex}
+      #pvbar button{height:26px;padding:0 12px;border-radius:99px;border:0;background:#1c1c21;color:#F6F3EF;font:600 11.5px "Segoe UI",sans-serif;cursor:pointer}#pvbar button:hover{background:#2a2a31}#pvbar button.p{background:var(--accent)}
+      .doc{position:absolute;inset:0;background:#e9e6df;display:none;color:#222}.doc.on{display:block}.page{position:absolute;left:6%;top:60px;width:44%;bottom:30px;background:#fff;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:34px 40px;font:15px/1.6 Georgia,serif;overflow:hidden}
+      .page h2{margin:0 0 8px;font-size:22px}.page .fig{margin:14px 0;width:190px;height:130px;position:relative}.page .eq{font-style:italic;font-size:19px;margin:10px 0;display:inline-block;padding:2px 6px}
+      .bl{position:absolute;inset:0;background:#2b2b2b;display:none;color:#ddd;font:12px "Segoe UI",sans-serif}.bl.on{display:block}
+      .bl .menu{position:absolute;left:0;right:0;top:0;height:26px;background:#1d1d1d;display:flex;align-items:center;gap:2px;padding:0 8px}.bl .menu span{padding:3px 9px;border-radius:4px}.bl .menu span.open{background:#4772b3;color:#fff}
+      .bl .drop{position:absolute;left:0;top:26px;width:210px;background:#181818;border:1px solid #3a3a3a;border-radius:0 0 6px 6px;padding:4px;display:none;z-index:2}.bl .drop.on{display:block}.bl .drop div{padding:5px 9px;border-radius:4px;display:flex;justify-content:space-between}.bl .drop div em{font-style:normal;color:#888}
+      .bl .vp{position:absolute;left:0;top:26px;right:270px;bottom:120px;background:radial-gradient(circle at 50% 45%,#454545,#303030)}.bl .cube{position:absolute;left:50%;top:48%;width:120px;height:120px;margin:-60px;background:linear-gradient(135deg,#9a9a9a,#666);transform:rotate(12deg) skew(-8deg);box-shadow:26px 22px 0 -4px #4d4d4d}
+      .bl .props{position:absolute;right:0;top:26px;width:270px;bottom:0;background:#303030;border-left:1px solid #1c1c1c;padding:10px}.bl .tabs{display:flex;flex-direction:column;gap:5px;position:absolute;left:8px;top:10px}.bl .tabs i{width:22px;height:22px;border-radius:5px;background:#474747;display:block}.bl .tabs i.on{background:#4772b3}
+      .bl .fields{margin-left:36px;display:grid;gap:7px}.bl .fields div{height:22px;border-radius:4px;background:#545454;display:flex;align-items:center;padding:0 8px;justify-content:space-between}.bl .tl{position:absolute;left:0;right:270px;bottom:0;height:120px;background:#252525;border-top:1px solid #1c1c1c}
+    </style>
+  </head>
+  <body>
+    <div id="mock">
+      <div class="doc" id="m-doc"><div class="page"><h2>The Pythagorean theorem</h2>In a right-angled triangle, the square on the hypotenuse equals the sum of the squares on the other two sides.
+        <div class="fig" id="m-fig"><svg viewBox="0 0 190 130" width="190" height="130"><path d="M20 15 L20 110 L165 110 Z" fill="#f3efe6" stroke="#333" stroke-width="2"/><path d="M20 96 h14 v14" fill="none" stroke="#333"/><text x="6" y="66" font-size="15" font-style="italic">b</text><text x="88" y="127" font-size="15" font-style="italic">a</text><text x="98" y="56" font-size="15" font-style="italic">c</text></svg></div>
+        <span class="eq" id="m-eq">a² + b² = c²</span><br/>Here a and b are the two shorter sides (the legs) and c is the longest side, opposite the right angle.</div></div>
+      <div class="bl" id="m-bl"><div class="menu"><span>File</span><span>Edit</span><span id="m-render">Render</span><span>Window</span><span>Help</span><span style="margin-left:30px;color:#888">Layout · Modeling · Sculpting · Shading</span></div>
+        <div class="drop" id="m-drop" style="left:96px"><div id="m-item">Render Image <em>F12</em></div><div>Render Animation <em>Ctrl F12</em></div><div>View Render <em>F11</em></div></div>
+        <div class="vp"><div class="cube"></div></div><div class="tl"></div>
+        <div class="props"><div class="tabs"><i></i><i class="on" id="m-tab"></i><i></i><i></i><i></i></div><div class="fields"><div>Render Engine <b id="m-engine">Cycles</b></div><div>Samples <b>128</b></div><div id="m-res">Resolution <b>1920 × 1080</b></div><div>Output <b>//render/</b></div></div></div></div>
+    </div>
+    <div id="pvbar"><button class="p" data-d="pyth">Explain Pythagoras</button><button class="p" data-d="blender">Blender: how do I render?</button><button data-d="shapes">All shapes</button><button data-d="clear">Clear</button></div>
+    <div id="stage">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg"><defs><mask id="hole"><rect width="100%" height="100%" fill="#fff"/><g id="holes"></g></mask></defs>
+        <rect id="dim" width="100%" height="100%" mask="url(#hole)"/><g id="ink"></g></svg>
+      <div id="cards"></div>
+      <div id="cur"><svg viewBox="0 0 26 28"><path d="M3 2 L3 21 L8.2 16.6 L11.6 24.6 L15 23.2 L11.7 15.4 L18.4 15 Z" fill="#E8714F" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg><b id="curname">Aegis</b></div>
+      <div id="cap"><span class="av"></span><div class="tx"><div class="hd"><span id="cap-h">Aegis</span><span class="dots" id="cap-d"></span></div><span id="cap-t"></span><span class="next" id="cap-n"></span></div></div>
+    </div>
+    <script>
+(() => {
+  const $ = s => document.querySelector(s), NS = 'http://www.w3.org/2000/svg', stage = $('#stage'), ink = $('#ink'), holes = $('#holes'), dim = $('#dim'), cards = $('#cards'), cur = $('#cur'), cap = $('#cap');
+  const W = () => innerWidth, H = () => innerHeight, COL = { accent: '#E8714F', coral: '#E8714F', blue: '#5B9BF5', green: '#4ADE80', amber: '#F5B544', yellow: '#F5B544', violet: '#A78BFA', purple: '#A78BFA', red: '#F2555A', pink: '#F472B6', cyan: '#38D0E8', white: '#ffffff' };
+  const col = c => COL[c] || c || COL.accent, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a || {}) e.setAttribute(k, String(a[k])); return e; };
+  let gen = 0, clearT = null, pos = { x: 0, y: 0 }, lastTrail = 0;
+  class Stop extends Error {}
+  const alive = g => { if (g !== gen) throw new Stop(); };
+  const sleep = (ms, g) => new Promise((ok, no) => setTimeout(() => g === gen ? ok() : no(new Stop()), reduce ? Math.min(ms, 30) : ms));
+  const tween = (ms, g, f) => new Promise((ok, no) => { if (reduce) ms = 1; const t0 = performance.now(); const step = t => { if (g !== gen) return no(new Stop()); const k = Math.min(1, (t - t0) / ms); f(k); k < 1 ? requestAnimationFrame(step) : ok(); }; requestAnimationFrame(step); });
+  const ease = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+
+  // ---- coordinates: pixels, or 0..1 fractions of the screen (auto-detected, or force with unit: 'px' | 'norm') ----
+  let unit = 'auto';
+  const isN = (x, y) => unit === 'norm' || (unit === 'auto' && Math.abs(x) <= 1 && Math.abs(y) <= 1);
+  const P = p => { if (!p) return null; const x = Number(Array.isArray(p) ? p[0] : p.x), y = Number(Array.isArray(p) ? p[1] : p.y); if (!isFinite(x) || !isFinite(y)) return null; return isN(x, y) ? { x: x * W(), y: y * H() } : { x, y }; };
+  const L = v => { v = Number(v); return unit === 'norm' || (unit === 'auto' && Math.abs(v) <= 1) ? v * Math.min(W(), H()) : v; };
+  // Same target formats as before: bbox {top,left,bottom,right} or [ymin,xmin,ymax,xmax] (0..1, or 0..1000 as Gemini returns), or x/y/width/height in pixels.
+  function rectOf(t) { const w = W(), h = H(); let b = t.bbox || t.box || t.box_2d; if (b && !Array.isArray(b) && typeof b === 'object') b = [b.top ?? b.ymin ?? 0, b.left ?? b.xmin ?? 0, b.bottom ?? b.ymax ?? 1, b.right ?? b.xmax ?? 1];
+    if (Array.isArray(b) && b.length === 4) { let [top, left, bottom, right] = b.map(Number); const k = Math.max(top, left, bottom, right) > 1.5 ? 1000 : 1; return { x: left / k * w, y: top / k * h, w: Math.max(4, (right - left) / k * w), h: Math.max(4, (bottom - top) / k * h) }; }
+    if (Number(t.width) > 0 && Number(t.height) > 0) { const n = unit === 'norm' || (unit === 'auto' && t.width <= 1 && t.height <= 1 && (t.x || 0) <= 1 && (t.y || 0) <= 1); return n ? { x: (t.x || 0) * w, y: (t.y || 0) * h, w: t.width * w, h: t.height * h } : { x: Number(t.x || 0), y: Number(t.y || 0), w: Number(t.width), h: Number(t.height) }; }
+    const c = P(t.point || t.at || (t.x != null && t.y != null ? t : null)); if (c) return { x: c.x - 22, y: c.y - 22, w: 44, h: 44 };
+    return { x: w / 2 - 180, y: h / 2 - 70, w: 360, h: 140 }; }
+
+  // ---- the cursor ----
+  const place = (x, y) => { pos = { x, y }; cur.style.transform = `translate(${x}px,${y}px)`; const t = performance.now(); if (cur.classList.contains('on') && t - lastTrail > 34 && !reduce) { lastTrail = t; const d = document.createElement('i'); d.className = 'trail'; d.style.left = x + 'px'; d.style.top = y + 'px'; stage.appendChild(d); setTimeout(() => d.remove(), 520); } };
+  const showCur = () => { if (!cur.classList.contains('on')) { place(W() / 2, H() - 90); cur.classList.add('on'); } };
+  async function moveTo(x, y, g, ms) { showCur(); const a = { ...pos }, d = Math.hypot(x - a.x, y - a.y); if (d < 2) return; ms = ms ?? Math.max(260, Math.min(1100, d * 1.25)); const nx = -(y - a.y) / d, ny = (x - a.x) / d, bow = Math.min(70, d * 0.16) * (x > a.x ? -1 : 1), cx = (a.x + x) / 2 + nx * bow, cy = (a.y + y) / 2 + ny * bow;
+    await tween(ms, g, k => { const e = ease(k), u = 1 - e; place(u * u * a.x + 2 * u * e * cx + e * e * x, u * u * a.y + 2 * u * e * cy + e * e * y); }); }
+  async function click(g, c) { cur.classList.add('down'); const r = el('circle', { cx: pos.x, cy: pos.y, r: 4, class: 'ripple', stroke: col(c) }); ink.appendChild(r); setTimeout(() => r.remove(), 720); await sleep(150, g); cur.classList.remove('down'); await sleep(120, g); }
+
+  // ---- pen: every stroke is drawn in real time with the cursor riding the tip ----
+  const wob = (seed, i) => (Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453 % 1) * 2 - 1;      // deterministic hand jitter
+  let seedN = 1;
+  const rough = (pts, closed, j = 1.3) => { const s = seedN++, q = pts.map((p, i) => ({ x: p.x + wob(s, i) * j, y: p.y + wob(s + 9, i) * j })); let d = `M ${q[0].x.toFixed(1)} ${q[0].y.toFixed(1)}`; for (let i = 1; i <= q.length - (closed ? 0 : 1); i++) { const a = q[i - 1], b = q[i % q.length], mx = (a.x + b.x) / 2 + wob(s + 3, i) * j * 1.6, my = (a.y + b.y) / 2 + wob(s + 5, i) * j * 1.6; d += ` Q ${mx.toFixed(1)} ${my.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`; } return d; };
+  const ell = (cx, cy, rx, ry) => { const s = seedN++, n = 26, pts = []; for (let i = 0; i <= n + 2; i++) { const a = -2.4 + i / n * Math.PI * 2, k = 1 + wob(s, i) * 0.012 + i * 0.0012; pts.push({ x: cx + Math.cos(a) * rx * k, y: cy + Math.sin(a) * ry * k }); } return 'M ' + pts.map(p => p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' L '); };
+  const rrect = (x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); return `M ${x + r} ${y} H ${x + w - r} Q ${x + w} ${y} ${x + w} ${y + r} V ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} H ${x + r} Q ${x} ${y + h} ${x} ${y + h - r} V ${y + r} Q ${x} ${y} ${x + r} ${y} Z`; };
+  async function stroke(d, o, g) { o = o || {}; const c = col(o.color), p = el('path', { d, class: 'ink' + (o.glow ? ' glow' : '') + (o.pulse ? ' hl' : ''), stroke: c, 'stroke-width': o.width || 3, style: `color:${c}` + (o.dash ? '' : '') }); if (o.opacity) p.setAttribute('opacity', o.opacity); ink.appendChild(p);
+    const len = p.getTotalLength() || 1; p.style.strokeDasharray = len; p.style.strokeDashoffset = len; const ms = o.ms ?? Math.max(240, Math.min(1500, len * (o.speed || 2.1)));
+    if (o.cursor !== false) { const s0 = p.getPointAtLength(0); await moveTo(s0.x, s0.y, g, o.hop); cur.classList.add('pen'); }
+    await tween(ms, g, k => { const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; p.style.strokeDashoffset = len * (1 - e); if (o.cursor !== false) { const pt = p.getPointAtLength(len * e); place(pt.x, pt.y); } });
+    cur.classList.remove('pen'); p.style.strokeDasharray = o.dash ? o.dash : 'none'; return p; }
+  const fill = (d, c, op) => { const f = el('path', { d, fill: col(c), 'fill-opacity': op ?? 0.22, class: 'fillin' }); ink.insertBefore(f, ink.firstChild); requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('on'))); return f; };
+  const text = (x, y, s, o) => { o = o || {}; const t = el('text', { x, y, class: 'lbl', fill: col(o.color || 'white'), 'font-size': o.size || 18, 'text-anchor': o.anchor || 'middle', 'dominant-baseline': 'middle' }); if (o.italic) t.setAttribute('font-style', 'italic'); t.textContent = s; ink.appendChild(t); requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('on'))); return t; };
+  const head = (a, b, size = 11) => { const ang = Math.atan2(b.y - a.y, b.x - a.x), p = k => ({ x: b.x - Math.cos(ang + k) * size, y: b.y - Math.sin(ang + k) * size }), l = p(0.45), r = p(-0.45); return `M ${l.x.toFixed(1)} ${l.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)} L ${r.x.toFixed(1)} ${r.y.toFixed(1)}`; };
+
+  // ---- drawings ----
+  const boxOf = d => { if (d.bbox || d.box || (d.width && d.height)) return rectOf(d); const c = P(d.at || d.center), s = L(d.size || 0); if (c && s) return { x: c.x - s / 2, y: c.y - s / 2, w: s, h: s }; return null; };
+  async function pythagoras(d, g) { const b0 = boxOf(d), S = b0 ? Math.min(b0.w, b0.h) : Math.min(380, Math.min(W(), H()) * 0.46), la = Number(d.a) || 4, lb = Number(d.b) || 3, lc = Math.hypot(la, lb), u = S / (la + 2 * lb > lb + 2 * la ? la + 2 * lb : lb + 2 * la), a = la * u, b = lb * u;
+    const ox = (b0 ? b0.x + b0.w / 2 : W() * (d.side === 'left' ? 0.28 : d.side === 'center' ? 0.5 : 0.72)) - (a + b + b) / 2 + b, oy = (b0 ? b0.y + b0.h / 2 : H() * 0.48) - (a + b + a) / 2 + a;
+    const A = { x: ox, y: oy }, C = { x: ox, y: oy + b }, B = { x: ox + a, y: oy + b }, squares = d.squares !== false, num = d.a && d.b, nice = v => Number.isInteger(v) ? v : +v.toFixed(2);
+    await stroke(rough([A, C, B], true), { color: 'white', width: 3.2 }, g); fill(`M ${A.x} ${A.y} L ${C.x} ${C.y} L ${B.x} ${B.y} Z`, 'white', 0.1);
+    const m = Math.min(16, b * 0.22); await stroke(`M ${C.x} ${C.y - m} L ${C.x + m} ${C.y - m} L ${C.x + m} ${C.y}`, { color: 'white', width: 2, ms: 220, hop: 200 }, g);
+    text((C.x + B.x) / 2, C.y + (squares ? a / 2 : 20), num ? `a = ${nice(la)}` : 'a', { color: 'blue', italic: !num, size: 17 }); await sleep(260, g);
+    text(A.x - (squares ? b / 2 : 18), (A.y + C.y) / 2, num ? `b = ${nice(lb)}` : 'b', { color: 'green', italic: !num, size: 17 }); await sleep(260, g);
+    const cl = text((A.x + B.x) / 2 + (squares ? b / 2 : 14), (A.y + B.y) / 2 - (squares ? a / 2 : 14), num ? `c = ${nice(lc)}` : 'c', { color: 'accent', italic: !num, size: 17 }); await sleep(420, g);
+    if (squares) { const sq = [[C, B, { x: B.x, y: B.y + a }, { x: C.x, y: C.y + a }, 'blue', 'a²', la * la], [A, C, { x: C.x - b, y: C.y }, { x: A.x - b, y: A.y }, 'green', 'b²', lb * lb], [A, B, { x: B.x + b, y: B.y - a }, { x: A.x + b, y: A.y - a }, 'accent', 'c²', lc * lc]];
+      for (const [p1, p2, p3, p4, c, name, area] of sq) { await stroke(rough([p2, p3, p4, p1], false, 1), { color: c, width: 2.6 }, g); fill(`M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p4.x} ${p4.y} Z`, c, 0.26); await sleep(160, g); text((p1.x + p3.x) / 2, (p1.y + p3.y) / 2 + (num ? 18 : 0) + (c === 'blue' ? 20 : 0), num ? `${name} = ${nice(area)}` : name, { color: c, size: 14 }); await sleep(380, g); } }
+    const fy = oy + b + (squares ? a : 0) + 40, fx = ox + (a - b) / 2 + (squares ? b / 2 : 0); text(fx, fy, d.formula || 'a² + b² = c²', { color: 'white', size: 24 }); await sleep(700, g);
+    if (num) { text(fx, fy + 30, `${nice(la * la)} + ${nice(lb * lb)} = ${nice(lc * lc)}`, { color: 'amber', size: 18 }); await sleep(500, g); }
+    if (d.note) text(fx, fy + (num ? 58 : 30), d.note, { color: 'white', size: 13 }); }
+  async function drawOne(d, g) { const type = String(d.type || d.kind || '').toLowerCase(), o = { color: d.color, width: d.width, glow: d.glow, dash: d.dashed ? '7 7' : null, speed: d.speed }; if (d.delay) await sleep(Number(d.delay), g);
+    const pts = (d.points || d.path || []).map ? (d.points || []).map(P).filter(Boolean) : [], a = P(d.from || d.start), b = P(d.to || d.end), bx = boxOf(d); let node = null, mid = null;
+    if (type === 'pythagoras' || (type === 'triangle' && !pts.length && !d.points)) { await pythagoras({ squares: type === 'pythagoras', ...d }, g); }
+    else if (type === 'formula' || type === 'text' || type === 'label') { const p = P(d.at || d.point) || (bx ? { x: bx.x + bx.w / 2, y: bx.y + bx.h / 2 } : { x: W() / 2, y: H() * 0.7 }); if (d.move !== false) await moveTo(p.x - 20, p.y + 16, g); text(p.x, p.y, d.text || d.formula || d.label || '', { color: d.color || 'white', size: d.size || (type === 'formula' ? 24 : 17), anchor: d.anchor, italic: d.italic }); await sleep(260, g); return; }
+    else if ((type === 'arrow' || type === 'line' || type === 'underline') && a && b) { const bend = Number(d.bend || 0), mx = (a.x + b.x) / 2 - (b.y - a.y) * bend, my = (a.y + b.y) / 2 + (b.x - a.x) * bend; node = await stroke(bend ? `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}` : rough([a, b], false, 0.9), o, g); if (type === 'arrow') await stroke(head(bend ? { x: mx, y: my } : a, b, 11 + (d.width || 3)), { ...o, ms: 160, cursor: false }, g); mid = { x: mx, y: my }; }
+    else if ((type === 'rect' || type === 'box' || type === 'square') && bx) { const d0 = rough([{ x: bx.x, y: bx.y }, { x: bx.x + bx.w, y: bx.y }, { x: bx.x + bx.w, y: bx.y + bx.h }, { x: bx.x, y: bx.y + bx.h }], true); node = await stroke(d0, o, g); if (d.fill) fill(rrect(bx.x, bx.y, bx.w, bx.h, 2), d.fill === true ? d.color : d.fill, d.fillOpacity); mid = { x: bx.x + bx.w / 2, y: bx.y - 14 }; }
+    else if (type === 'circle' || type === 'ellipse') { const c = P(d.center || d.at) || (bx && { x: bx.x + bx.w / 2, y: bx.y + bx.h / 2 }); if (!c) return; const rx = d.radius != null ? L(d.radius) : d.rx != null ? L(d.rx) : bx ? bx.w / 2 + 8 : 40, ry = d.ry != null ? L(d.ry) : d.radius != null ? rx : bx ? bx.h / 2 + 8 : rx; node = await stroke(ell(c.x, c.y, rx, ry), o, g); if (d.fill) fill(`M ${c.x - rx} ${c.y} a ${rx} ${ry} 0 1 0 ${rx * 2} 0 a ${rx} ${ry} 0 1 0 ${-rx * 2} 0`, d.fill === true ? d.color : d.fill, d.fillOpacity); mid = { x: c.x, y: c.y - ry - 14 }; }
+    else if ((type === 'polygon' || type === 'triangle' || type === 'polyline' || type === 'freehand' || type === 'path') && pts.length > 1) { const closed = type === 'polygon' || type === 'triangle' || d.closed; node = await stroke(type === 'freehand' ? 'M ' + pts.map(p => p.x + ' ' + p.y).join(' L ') : rough(pts, closed), o, g); if (d.fill) fill('M ' + pts.map(p => p.x + ' ' + p.y).join(' L ') + ' Z', d.fill === true ? d.color : d.fill, d.fillOpacity); mid = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: Math.min(...pts.map(p => p.y)) - 14 }; }
+    else if (type === 'path' && typeof d.d === 'string') node = await stroke(d.d, o, g);
+    else if (type === 'highlight' && (bx || (a && b))) { const p1 = a || { x: bx.x, y: bx.y + bx.h / 2 }, p2 = b || { x: bx.x + bx.w, y: bx.y + bx.h / 2 }; node = await stroke(rough([p1, p2], false, 0.6), { color: d.color || 'amber', width: d.width || (bx ? bx.h : 18), opacity: 0.32, ms: 420 }, g); }
+    else if (type === 'angle' || type === 'rightangle') { const v = P(d.at || d.vertex); if (!v) return; const r = L(d.radius || 18); if (type === 'rightangle') node = await stroke(`M ${v.x} ${v.y - r} L ${v.x + r} ${v.y - r} L ${v.x + r} ${v.y}`, { ...o, width: 2, ms: 220 }, g); else { const a0 = (d.startAngle || 0) * Math.PI / 180, a1 = (d.endAngle || 90) * Math.PI / 180; node = await stroke(`M ${v.x + Math.cos(a0) * r} ${v.y - Math.sin(a0) * r} A ${r} ${r} 0 0 0 ${v.x + Math.cos(a1) * r} ${v.y - Math.sin(a1) * r}`, { ...o, width: 2, ms: 260 }, g); } mid = { x: v.x + r + 14, y: v.y - r - 8 }; }
+    else if (type === 'point' || type === 'dot') { const c = P(d.at || d.point); if (!c) return; await moveTo(c.x, c.y, g); const dot = el('circle', { cx: c.x, cy: c.y, r: d.radius || 5, fill: col(d.color), class: 'fillin' }); ink.appendChild(dot); requestAnimationFrame(() => dot.classList.add('on')); mid = { x: c.x + 14, y: c.y - 14 }; }
+    if (d.label && mid && !['formula', 'text', 'label'].includes(type)) text(mid.x, mid.y, d.label, { color: d.labelColor || d.color || 'white', size: d.size || 15 });
+    await sleep(d.pause ?? 140, g); }
+
+  // ---- targets: dim the rest, glide over, ring the control, say what to do ----
+  const callouts = []; let stepNo = 0;
+  function callout(html, box, c) { const n = document.createElement('div'); n.className = 'callout'; n.style.setProperty('--c', col(c)); n.innerHTML = html; cards.appendChild(n); const cw = n.offsetWidth, ch = n.offsetHeight, gap = 26, w = W(), h = H();
+    const opts = [[box.x + box.w + gap, box.y + box.h / 2 - ch / 2, 'r'], [box.x - gap - cw, box.y + box.h / 2 - ch / 2, 'l'], [box.x + box.w / 2 - cw / 2, box.y + box.h + gap, 'b'], [box.x + box.w / 2 - cw / 2, box.y - gap - ch, 't']];
+    const fits = o => o[0] >= 10 && o[1] >= 10 && o[0] + cw <= w - 10 && o[1] + ch <= h - 110 && !callouts.some(r => o[0] < r.x + r.w + 8 && o[0] + cw + 8 > r.x && o[1] < r.y + r.h + 8 && o[1] + ch + 8 > r.y); const o = opts.find(fits) || opts[0];
+    const x = Math.max(10, Math.min(w - cw - 10, o[0])), y = Math.max(10, Math.min(h - ch - 10, o[1])); n.style.left = x + 'px'; n.style.top = y + 'px'; callouts.push({ x, y, w: cw, h: ch }); requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('on')));
+    const from = o[2] === 'r' ? { x, y: y + ch / 2 } : o[2] === 'l' ? { x: x + cw, y: y + ch / 2 } : o[2] === 'b' ? { x: x + cw / 2, y } : { x: x + cw / 2, y: y + ch }, to = o[2] === 'r' ? { x: box.x + box.w + 8, y: box.y + box.h / 2 } : o[2] === 'l' ? { x: box.x - 8, y: box.y + box.h / 2 } : o[2] === 'b' ? { x: box.x + box.w / 2, y: box.y + box.h + 8 } : { x: box.x + box.w / 2, y: box.y - 8 }; return { from, to }; }
+  const escH = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function target(t, i, pay, g) { const box = rectOf(t), c = t.color || pay.color || 'accent', shape = String(t.shape || pay.shape || 'box').toLowerCase(), pad = t.padding ?? 7, cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    if (pay.dim !== false && t.dim !== false) { holes.appendChild(el('rect', { x: box.x - pad - 3, y: box.y - pad - 3, width: box.w + pad * 2 + 6, height: box.h + pad * 2 + 6, rx: 12, fill: '#000' })); dim.classList.add('on'); }
+    const tip = P(t.pointer) || (i === 0 && P(pay.pointer)) || { x: cx + Math.min(box.w * 0.18, 14), y: cy + Math.min(box.h * 0.18, 8) };
+    await moveTo(tip.x, tip.y, g); await sleep(120, g);
+    if (shape === 'circle' || shape === 'ellipse') await stroke(ell(cx, cy, box.w / 2 + pad + 6, box.h / 2 + pad + 4), { color: c, width: 3.2, glow: true, pulse: true, cursor: false, ms: 520 }, g);
+    else if (shape !== 'none' && shape !== 'pointer' && shape !== 'arrow') { await stroke(rrect(box.x - pad, box.y - pad, box.w + pad * 2, box.h + pad * 2, 10), { color: c, width: 3, glow: true, pulse: true, cursor: false, ms: 480 }, g);
+      const k = 9, x0 = box.x - pad - 5, y0 = box.y - pad - 5, x1 = box.x + box.w + pad + 5, y1 = box.y + box.h + pad + 5, cr = el('path', { class: 'corner', d: `M ${x0} ${y0 + k} V ${y0} H ${x0 + k} M ${x1 - k} ${y0} H ${x1} V ${y0 + k} M ${x1} ${y1 - k} V ${y1} H ${x1 - k} M ${x0 + k} ${y1} H ${x0} V ${y1 - k}` }); ink.appendChild(cr); requestAnimationFrame(() => cr.classList.add('on')); }
+    const label = t.label || t.name || t.title || '', note = t.note || t.description || '', keys = [].concat(t.keys || t.key || t.shortcut || []), n = t.step != null ? (t.step || i + 1) : (pay.targets.length > 1 ? i + 1 : null);
+    if (label || note || keys.length) { const line = callout(`<strong>${n != null ? `<span class="num">${escH(n)}</span>` : ''}${escH(label || 'Here')}</strong>${escH(note)}${keys.length ? '<div>' + keys.map(k => `<kbd>${escH(k)}</kbd>`).join(keys.length > 1 && !t.keysSeparate ? '' : '') + '</div>' : ''}${pay.next && i === pay.targets.length - 1 && !pay.explanation ? `<span class="next">Next: ${escH(pay.next)}</span>` : ''}`, box, c);
+      const mx = (line.from.x + line.to.x) / 2 + (line.to.y - line.from.y) * 0.18, my = (line.from.y + line.to.y) / 2 - (line.to.x - line.from.x) * 0.18; const kA = ink.children.length; await stroke(`M ${line.from.x} ${line.from.y} Q ${mx} ${my} ${line.to.x} ${line.to.y}`, { color: c, width: 2.4, cursor: false, ms: 300 }, g); await stroke(head({ x: mx, y: my }, line.to, 10), { color: c, width: 2.4, cursor: false, ms: 120 }, g); for (let q = kA; q < ink.children.length; q++) ink.children[q].dataset.lead = '1'; }
+    else if (n != null) { const bdg = document.createElement('div'); bdg.className = 'step-badge'; bdg.textContent = n; bdg.style.left = box.x - 4 + 'px'; bdg.style.top = box.y - 4 + 'px'; cards.appendChild(bdg); }
+    if (t.click || pay.click) await click(g, c); else await sleep(200, g); }
+
+  // ---- caption ----
+  let typeT = null;
+  function caption(txt, next, i, n, where) { clearInterval(typeT); if (!txt) { cap.classList.remove('on'); return 0; } cap.classList.toggle('top', where === 'top'); $('#cap-h').textContent = n > 1 ? `Step ${i + 1} of ${n}` : 'Aegis'; $('#cap-d').innerHTML = n > 1 ? Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('') : ''; $('#cap-n').textContent = next ? 'Next: ' + next : '';
+    const t = $('#cap-t'); t.textContent = ''; cap.classList.add('on'); let k = 0; const per = reduce ? txt.length : Math.max(1, Math.round(txt.length / 60)); typeT = setInterval(() => { k += per; t.textContent = txt.slice(0, k); if (k >= txt.length) clearInterval(typeT); }, 18); return Math.min(1800, txt.length * 14); }
+
+  // ---- play ----
+  const wipe = () => { ink.replaceChildren(); holes.replaceChildren(); cards.replaceChildren(); callouts.length = 0; dim.classList.remove('on'); document.querySelectorAll('.trail').forEach(t => t.remove()); };
+  async function play(pay) { const g = ++gen; clearTimeout(clearT); unit = pay.unit === 'px' || pay.unit === 'norm' ? pay.unit : 'auto'; seedN = 1; wipe(); stage.classList.add('on'); if (pay.cursorName) $('#curname').textContent = pay.cursorName;
+    const steps = Array.isArray(pay.steps) && pay.steps.length ? pay.steps.map(s => ({ ...s, targets: s.targets || (s.target ? [s.target] : []) })) : [{ ...pay, targets: pay.targets || [] }];
+    try { for (let i = 0; i < steps.length; i++) { const s = steps[i]; alive(g); if (i > 0 && s.keep !== true) { holes.replaceChildren(); dim.classList.remove('on'); cards.replaceChildren(); callouts.length = 0; ink.querySelectorAll('.hl,.corner,[data-lead]').forEach(e => e.remove()); if (s.clear) ink.replaceChildren(); }
+        hook('step', i, s); caption(s.explanation || s.text || (i === 0 ? pay.explanation : ''), s.next ?? (i === steps.length - 1 ? pay.next : ''), i, steps.length, s.caption || pay.caption);
+        const sp = { ...pay, ...s }; for (let k = 0; k < s.targets.length; k++) await target(s.targets[k], k, sp, g);
+        for (const d of s.drawings || []) await drawOne(d, g);
+        if (!s.targets.length && !(s.drawings || []).length && P(s.pointer)) { const p = P(s.pointer); await moveTo(p.x, p.y, g); }
+        if (i < steps.length - 1) await sleep(Number(s.waitMs ?? s.holdMs ?? 2200), g); }
+      hook('done'); try { window.aegisAnnotations?.done?.({ steps: steps.length }); } catch {}
+    } catch (e) { if (!(e instanceof Stop)) throw e; return; }
+    clearT = setTimeout(clear, Number(pay.timeoutMs) || 12000); }
+  function clear() { gen++; clearTimeout(clearT); clearInterval(typeT); stage.classList.remove('on'); cur.classList.remove('on', 'pen', 'down'); cap.classList.remove('on'); setTimeout(() => { if (!stage.classList.contains('on')) wipe(); }, 240); hook('clear'); }
+  let hook = () => {};
+  if (window.aegisAnnotations) { window.aegisAnnotations.onDraw(p => { if (p && p.clear && !p.targets && !p.drawings && !p.steps) clear(); else if (p) play(p); }); window.aegisAnnotations.onClear?.(clear); }
+  addEventListener('keydown', e => { if (e.key === 'Escape') clear(); });
+  window.AegisAnnotate = { play, clear };
+
+  // ---- browser preview: fake apps + sample payloads (exactly what the host would send) ----
+  if (!window.aegisAnnotations) {
+    document.documentElement.classList.add('preview');
+    const WB = new URLSearchParams(location.search).get('wb') === '1';
+    if (WB) {
+      // In-app whiteboard mode: no fake apps; the stage fills the panel.
+      $('#mock').style.display = 'none';
+      $('#pvbar').style.display = 'none';
+      const wbDemos = {
+        pyth: () => ({ unit: 'px', timeoutMs: 60000, steps: [
+          { explanation: 'This is a right-angled triangle. The two short sides are a and b; the long side opposite the right angle is c.', drawings: [{ type: 'pythagoras', a: 4, b: 3, side: 'right' }], waitMs: 3000 },
+          { explanation: 'I drew it with a = 4 and b = 3, then built a square on each side. The two small squares together (16 + 9) cover exactly the same area as the big one (25). That is all the formula says.', keep: true, next: 'try it with a = 5, b = 12' }] }),
+        shapes: () => ({ explanation: 'Every primitive the agent can ask for: arrow, box, circle, polygon, highlight, angle, text.', timeoutMs: 30000, dim: false, drawings: [
+          { type: 'arrow', from: [0.12, 0.3], to: [0.3, 0.42], bend: 0.2, label: 'arrow', color: 'accent' },
+          { type: 'rect', x: 0.34, y: 0.26, width: 0.14, height: 0.16, color: 'blue', fill: true, label: 'rect' },
+          { type: 'circle', center: [0.6, 0.34], radius: 0.07, color: 'green', fill: true, label: 'circle' },
+          { type: 'polygon', points: [[0.14, 0.72], [0.26, 0.72], [0.2, 0.54]], color: 'violet', fill: true, label: 'polygon' },
+          { type: 'highlight', from: [0.34, 0.62], to: [0.5, 0.62], color: 'amber' },
+          { type: 'text', at: [0.42, 0.57], text: 'highlight + text', size: 15 },
+          { type: 'line', from: [0.56, 0.7], to: [0.7, 0.7], color: 'white' },
+          { type: 'angle', at: [0.56, 0.7], radius: 34, startAngle: 0, endAngle: 54, color: 'amber', label: '54°' }] }),
+      };
+      addEventListener('message', e => { const d = String(e.data || ''); if (!d.startsWith('annot:')) return; hook = () => {}; const k = d.slice(6); if (k === 'clear') clear(); else if (wbDemos[k]) play(wbDemos[k]()); });
+      window.AegisAnnotateWb = { play, clear, demos: Object.keys(wbDemos) };
+      return;
+    }
+    const R = id => { const r = $(id).getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }, show = id => { $('#m-doc').classList.toggle('on', id === 'doc'); $('#m-bl').classList.toggle('on', id === 'bl'); $('#m-drop').classList.remove('on'); $('#m-render').classList.remove('open'); };
+    const demos = {
+      pyth: () => { show('doc'); return { unit: 'px', timeoutMs: 30000, steps: [
+        { explanation: 'This is a right-angled triangle. The two short sides are a and b; the long side opposite the right angle is c.', targets: [{ ...R('#m-fig'), label: 'The triangle on your page', note: 'One corner is exactly 90°.', shape: 'circle' }], waitMs: 2600 },
+        { explanation: 'Let me draw it bigger with a = 4 and b = 3, then build a square on each side.', drawings: [{ type: 'pythagoras', a: 4, b: 3, side: 'right' }], waitMs: 1800 },
+        { explanation: 'The two small squares together (16 + 9) cover exactly the same area as the big one (25). That is all the formula says.', targets: [{ ...R('#m-eq'), label: 'a² + b² = c²', note: 'So c = √25 = 5.', dim: false }], keep: true, next: 'try it with a = 5, b = 12' }] }; },
+      blender: () => { show('bl'); hook = (ev, i) => { if (ev === 'step') { $('#m-render').classList.toggle('open', i >= 1); $('#m-drop').classList.toggle('on', i >= 1); } if (ev === 'clear') { $('#m-drop').classList.remove('on'); $('#m-render').classList.remove('open'); } }; $('#m-drop').classList.add('on'); const item = R('#m-item'); $('#m-drop').classList.remove('on');
+        return { unit: 'px', timeoutMs: 20000, steps: [
+          { explanation: 'To render the file, start with the Render menu in the top bar.', targets: [{ ...R('#m-render'), label: 'Render menu', note: 'Click here first.', click: true }], waitMs: 1700 },
+          { explanation: 'Now choose Render Image. Blender renders the current frame in a new window.', targets: [{ ...item, label: 'Render Image', note: 'Or press the shortcut any time:', keys: ['F12'], click: true }], waitMs: 2600 },
+          { explanation: 'Before you do, check these two settings: the engine and the output size.', targets: [{ ...R('#m-engine'), label: 'Render engine', note: 'Cycles is slower but realistic.', color: 'blue', padding: 4 }, { ...R('#m-res'), label: 'Resolution', note: '1920 × 1080 is Full HD.', color: 'green', padding: 3 }], next: 'press F12 and wait for the image' }] }; },
+      shapes: () => { show('bl'); return { explanation: 'Every primitive the agent can ask for: arrow, box, circle, polygon, highlight, angle, text.', timeoutMs: 20000, dim: false, drawings: [
+        { type: 'arrow', from: [0.12, 0.3], to: [0.3, 0.42], bend: 0.2, label: 'arrow', color: 'accent' }, { type: 'rect', x: 0.34, y: 0.26, width: 0.14, height: 0.16, color: 'blue', fill: true, label: 'rect' }, { type: 'circle', center: [0.6, 0.34], radius: 0.07, color: 'green', fill: true, label: 'circle' },
+        { type: 'polygon', points: [[0.14, 0.72], [0.26, 0.72], [0.2, 0.54]], color: 'violet', fill: true, label: 'polygon' }, { type: 'highlight', from: [0.34, 0.62], to: [0.5, 0.62], color: 'amber' }, { type: 'text', at: [0.42, 0.57], text: 'highlight + text', size: 15 },
+        { type: 'line', from: [0.56, 0.7], to: [0.7, 0.7], color: 'white' }, { type: 'line', from: [0.56, 0.7], to: [0.66, 0.56], color: 'white' }, { type: 'angle', at: [0.56, 0.7], radius: 34, startAngle: 0, endAngle: 54, color: 'amber', label: '54°' }] }; },
+    };
+    $('#pvbar').addEventListener('click', e => { const d = e.target.dataset.d; if (!d) return; hook = () => {}; if (d === 'clear') return clear(); play(demos[d]()); });
+    addEventListener('message', e => { const d = String(e.data || ''); if (d.startsWith('annot:')) { const k = d.slice(6); hook = () => {}; k === 'clear' ? clear() : demos[k] && play(demos[k]()); } });
+    show(new URLSearchParams(location.search).get('demo') === 'blender' ? 'bl' : 'doc'); }
+})();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,131 @@
+/* ---------------------------------------------------------------------------
+   AEGIS visual layer (?layer=1)
+
+   This is styling only. The surface itself is the studio's own Stage/Scene3D/
+   Callouts/aero lab, mounted full-screen over the desktop: the layer makes that
+   real engine transparent and places the AEGIS controls around it.
+--------------------------------------------------------------------------- */
+html.layer-mode,
+html.layer-mode body,
+html.layer-mode #root{background:transparent!important;}
+html.layer-mode body{overflow:hidden;color-scheme:dark;}
+
+.layer{position:fixed;inset:0;z-index:1;pointer-events:none;color:#eaf1f8;
+  font-family:'Geist Variable',system-ui,sans-serif}
+
+/* The real stage, edge to edge and fully transparent. */
+.layer-stage{position:fixed;inset:0;z-index:2;pointer-events:none}
+.layer-stage .stage-card{position:absolute;inset:0;display:block;border:0;border-radius:0;
+  background:transparent;box-shadow:none;overflow:visible;isolation:auto}
+.layer-stage .paper-stage{height:100%;background:transparent!important;color-scheme:light;
+  overflow:visible;isolation:auto}
+.layer-stage .paper-wash,
+.layer-stage .stage-heading,
+.layer-stage .stage-tools,
+.layer-stage .stage-footer,
+.layer-stage .canvas-axes,
+.layer-stage .stage-zoom,
+.layer-stage .aero-note-band{display:none!important}
+.layer-stage .drawing-host{pointer-events:auto}
+.layer-stage .webgl-surface{cursor:grab}
+
+/* Annotations keep the Sightline paper look but sit above the command bar. */
+.layer-stage .annotation-detail{bottom:142px;width:min(360px,44vw);z-index:6}
+.layer-stage .story-note{bottom:142px}
+.layer-stage .aero-legend{left:auto;right:19px;bottom:150px;max-width:min(340px,46vw)}
+
+/* Walkthrough rail: a floating glass strip instead of a docked footer. */
+.layer-stage .story-rail{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);
+  width:min(860px,calc(100vw - 56px));min-height:42px;padding:4px 10px;
+  border:1px solid #2b3744;border-radius:12px;background:#0b1016f2;
+  box-shadow:0 16px 40px #03060ab8;backdrop-filter:blur(18px);pointer-events:auto;z-index:5}
+
+/* Aero lab controls: compact glass panel, bottom left. */
+.layer-stage .aero-controls{position:fixed;left:18px;top:70px;z-index:5;
+  width:min(342px,calc(100vw - 36px));min-height:0;flex-direction:column;align-items:stretch;
+  gap:8px;padding:10px;border:1px solid #2b3744;border-radius:13px;background:#0b1016f2;
+  box-shadow:0 16px 40px #03060ab8;backdrop-filter:blur(18px);pointer-events:auto}
+.layer-stage .aero-tabs button{flex:1;justify-content:center}
+.layer-stage .lab-tuners{justify-content:flex-start;flex-wrap:wrap;gap:9px}
+.layer-stage .lab-dial{width:calc(50% - 5px);min-width:0}
+.layer-stage .aero-metric{position:fixed;right:19px;top:64px;z-index:5;pointer-events:none}
+
+/* Ink surface: the owner's blue drawing over the desktop. */
+.layer-ink{position:fixed;inset:0;z-index:3;pointer-events:none;
+  width:100%;height:100%;display:block;outline:0}
+.layer.is-drawing .layer-ink{pointer-events:auto;cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="7.5" fill="none" stroke="%233ea8ff" stroke-width="1.7"/><circle cx="13" cy="13" r="2.2" fill="%233ea8ff"/><path d="M13 1v5M13 20v5M1 13h5M20 13h5" stroke="%233ea8ff" stroke-width="1.2" stroke-linecap="round"/></svg>') 13 13,crosshair}
+
+/* Header */
+.layer-top{position:fixed;left:0;right:0;top:0;z-index:7;display:flex;align-items:center;
+  justify-content:space-between;gap:14px;padding:14px 18px;pointer-events:none}
+.layer-mark{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+  border:1px solid #2c3946;background:#0a0f15e8;backdrop-filter:blur(16px);pointer-events:auto;
+  font:650 10px/1 var(--mono);letter-spacing:.14em;color:#dce8f2}
+.layer-mark i{width:6px;height:6px;border-radius:50%;background:#4fd1a5;box-shadow:0 0 9px #4fd1a5}
+.layer-mark span{color:#f4fbff}
+.layer-mark b{font-weight:600;color:#7f93a6;letter-spacing:.16em}
+.layer-hint{padding:6px 12px;border-radius:999px;background:#0a0f15c4;border:1px solid #232e3a;
+  font:520 11.5px/1 'Geist Variable',system-ui,sans-serif;color:#9fb0bf;backdrop-filter:blur(14px);
+  box-shadow:0 6px 20px #04070b66}
+.layer-close{pointer-events:auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid #2c3946;background:#0a0f15e8;color:#b9c8d4;backdrop-filter:blur(16px)}
+.layer-close:hover{background:#1b2733;color:#fff;border-color:#4a5d6f}
+
+/* Idle: click-through, just a reminder of the gesture. */
+.layer-idle{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:6;
+  display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:999px;
+  border:1px solid #26323e;background:#080c11d9;backdrop-filter:blur(16px);
+  font:600 10px/1 var(--mono);letter-spacing:.13em;color:#c9d8e4}
+.layer-idle i{width:6px;height:6px;border-radius:50%;background:#4fd1a5;box-shadow:0 0 9px #4fd1a5}
+.layer-idle b{font-weight:520;letter-spacing:.04em;color:#7d90a1;padding-left:3px;border-left:1px solid #2b3744}
+
+/* Command bar */
+.layer-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:7;
+  display:flex;align-items:center;gap:6px;width:min(760px,calc(100vw - 48px));padding:7px 8px;
+  border:1px solid #2b3744;border-radius:15px;background:#0b1016f5;backdrop-filter:blur(20px);
+  box-shadow:0 20px 54px #02050ad9;pointer-events:auto}
+.layer-bar input{flex:1;min-width:0;height:34px;padding:0 6px;border:0;background:transparent;
+  color:#eef5fa;font:470 13px/1 'Geist Variable',system-ui,sans-serif;outline:0}
+.layer-bar input::placeholder{color:#7a8b9b}
+.layer-tool{width:34px;height:34px;flex:none;border-radius:9px;display:grid;place-items:center;
+  color:#a9bac8;border:1px solid transparent}
+.layer-tool:hover:not(:disabled){background:#1a2530;color:#eaf4fb;border-color:#33424f}
+.layer-tool.on{background:#123146;border-color:#2f6b93;color:#8ad4ff;box-shadow:0 0 0 1px #1d4a6633}
+.layer-tool:disabled{opacity:.35}
+.layer-go{width:34px;height:34px;flex:none;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(180deg,#3ea8ff,#2b7fd0);color:#04121d;border:1px solid #64bcff}
+.layer-go:hover:not(:disabled){background:linear-gradient(180deg,#63bcff,#3d93e2)}
+.layer-go:disabled{opacity:.4;background:#1d2833;border-color:#2c3946;color:#7f93a6}
+.layer-split{width:1px;height:22px;background:#26323e;margin:0 3px;flex:none}
+.layer-modes{display:flex;gap:2px;padding:2px;border-radius:8px;background:#101a23;border:1px solid #24303c}
+.layer-modes button{min-width:32px;height:28px;border-radius:6px;font:640 10.5px/1 var(--mono);color:#93a5b4}
+.layer-modes button[aria-pressed='true']{background:#22303d;color:#e8f3fb}
+.layer .spin{animation:layer-spin .9s linear infinite}
+@keyframes layer-spin{to{transform:rotate(360deg)}}
+
+/* Empty + error states */
+.layer-empty{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:7px;width:min(430px,86vw);
+  padding:20px 22px;border:1px solid #26323e;border-radius:16px;background:#0a0f15d9;
+  backdrop-filter:blur(18px);text-align:center;pointer-events:none;box-shadow:0 24px 60px #02050ab3}
+.layer-empty svg{color:#7dd3fc}
+.layer-empty strong{font-size:14px;font-weight:640;color:#f0f7fc;letter-spacing:-.01em}
+.layer-empty span{font-size:11.5px;color:#9aabb9;line-height:1.5}
+.layer-empty kbd{padding:1px 5px;border-radius:4px;border:1px solid #34424f;background:#16202a;
+  font:640 10px var(--mono);color:#cfe0ec}
+.layer-error{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:8;
+  max-width:min(520px,86vw);padding:9px 13px;border-radius:9px;border:1px solid #6a3d3d;
+  background:#1b0f10ee;color:#f3c9c4;font-size:11.5px;backdrop-filter:blur(14px);pointer-events:auto}
+
+/* While idle the chrome is hidden, so the desktop underneath keeps its clicks. */
+.layer:not(.is-active) .layer-bar,
+.layer:not(.is-active) .layer-top,
+.layer:not(.is-active) .layer-stage .aero-controls,
+.layer:not(.is-active) .layer-stage .story-rail{pointer-events:none;opacity:0}
+
+@media (max-width:760px){
+  .layer-stage .aero-controls{display:none}
+  .layer-stage .story-rail{width:calc(100vw - 28px);bottom:84px}
+  .layer-bar{width:calc(100vw - 24px)}
+  .layer-mark b{display:none}
+}

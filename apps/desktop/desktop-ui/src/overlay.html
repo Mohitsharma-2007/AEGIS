@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com;" />
+    <title>Aegis overlay</title>
+    <style>
+/*CSS*/
+.stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;pointer-events:none}
+.stage>*{pointer-events:auto}
+html.preview .stage{width:280px;height:340px;margin:30px auto 0;outline:1px dashed rgba(255,255,255,.16)}
+/* the character never changes size on hover */
+.mascot-wrap{position:relative;width:var(--sz,100px);height:var(--sz,100px);display:grid;place-items:center;cursor:grab;-webkit-app-region:no-drag;touch-action:none;flex:0 0 auto}
+.mascot-wrap:active{cursor:grabbing}
+.aura{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--state) 50%,transparent),transparent 68%);filter:blur(12px);opacity:0;transform:scale(var(--pulse,1));transition:background .5s,opacity .4s;pointer-events:none}
+:root:not([data-state=idle]) .aura{opacity:.55}
+.ring{position:absolute;inset:2%;border-radius:50%;border:2px solid var(--state);opacity:0;pointer-events:none}
+:root[data-state=listening] .ring{animation:ripple 1.6s ease-out infinite}:root[data-state=listening] .ring.b{animation-delay:.8s}
+@keyframes ripple{0%{transform:scale(.7);opacity:.7}100%{transform:scale(1.22);opacity:0}}
+.orbit{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+.orbit::after,.orbit::before{content:"";position:absolute;left:50%;top:1%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--state);box-shadow:0 0 10px var(--state)}
+.orbit::before{top:auto;bottom:1%;width:4px;height:4px;margin-left:-2px;opacity:.7}
+.busy .orbit{opacity:1;animation:orbit 1.3s linear infinite}@keyframes orbit{to{transform:rotate(360deg)}}
+.spark{position:absolute;left:50%;top:40%;width:6px;height:6px;border-radius:50%;background:var(--c);pointer-events:none;animation:spark .8s ease-out forwards}
+@keyframes spark{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
+#mascot-img{position:relative;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))}
+.pill{transition:opacity .25s ease,transform .35s var(--spring),border-color .3s}.pill.quiet{opacity:0;transform:translateY(-8px) scale(.9);pointer-events:none}
+
+/* everything informative lives BELOW the character */
+.below{display:flex;flex-direction:column;align-items:center;gap:clamp(3px,1.1vh,7px);width:min(264px,calc(100% - 8px));margin-top:clamp(-2px,.4vh,3px);max-height:calc(100% - 120px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.below::-webkit-scrollbar{display:none}
+html.preview .below{width:264px}
+.pill{max-width:100%;padding:5px 11px;border-radius:15px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 6px 16px var(--shadow);transition:border-color .3s;cursor:default}
+.pill .rowp{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:650;white-space:nowrap;justify-content:center}
+.pill .rowp b{color:var(--state)}.pill .rowp span.m{color:var(--dim);font-weight:500}
+.pill p{margin:3px 0 1px;font-size:11.5px;line-height:1.36;color:var(--text);text-align:center;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.pill p:empty{display:none}
+.pill{flex:0 0 auto}
+@media(max-height:430px){.stage{padding-top:4px}.below{gap:3px}.pill{padding:4px 9px}.pill p{-webkit-line-clamp:2}}
+.pill .pbar{margin:5px 0 2px;height:4px}.pill .bars{height:12px}.pill .bars i{width:2px}
+:root:not([data-state=speaking]):not([data-state=listening]) .pill .bars{display:none}
+.toast{width:100%;padding:9px 11px;border-radius:17px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 8px 20px var(--shadow);animation:tin .5s var(--spring) both;cursor:pointer}
+.toast.out{animation:tout .3s ease forwards}@keyframes tin{from{opacity:0;transform:translateY(-10px) scale(.9)}}@keyframes tout{to{opacity:0;transform:translateY(6px) scale(.95)}}
+.toast .steps{margin:5px 0 0;gap:3px}.toast .steps div{font-size:10.5px}.toast .steps i{width:13px;height:13px;font-size:8px}
+.row3{display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;pointer-events:none}.row3>*{pointer-events:auto}
+.minis{width:70px;display:flex;flex-wrap:wrap-reverse;gap:4px;align-content:flex-start;padding-bottom:6px;min-height:34px}.minis.l{justify-content:flex-end}.minis.r{justify-content:flex-start}
+.mini{position:relative;width:32px;height:32px;display:grid;place-items:center;animation:mspawn .6s var(--spring) both;cursor:default}.mini.l{--from:38px}.mini.r{--from:-38px}
+@keyframes mspawn{0%{transform:translate(var(--from),-18px) scale(0);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+.mini svg.pr{position:absolute;inset:0;width:32px;height:32px}.mini .mm{position:relative}.mini.dn{animation:mdone .5s var(--spring) both}.mini.dn::after{content:"✓";position:absolute;right:-2px;top:-2px;width:13px;height:13px;border-radius:50%;background:var(--green);color:#06210f;font-size:9px;font-weight:800;display:grid;place-items:center}
+@keyframes mdone{50%{transform:translateY(-9px) scale(1.12)}}.mini.out{animation:mout .4s ease forwards}@keyframes mout{to{transform:translate(var(--from),-10px) scale(0);opacity:0}}
+.minis .more{font-size:10px;font-weight:700;color:var(--blue);align-self:center;padding:0 3px;text-shadow:0 1px 3px #000}
+.gshadow{position:absolute;left:22%;right:22%;bottom:3%;height:9%;border-radius:50%;background:rgba(0,0,0,.34);filter:blur(4px);pointer-events:none;animation:gs 4.2s ease-in-out infinite}@keyframes gs{50%{transform:scaleX(.9);opacity:.75}}
+.pill{position:relative;margin-top:4px}.pill::before{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;background:var(--surface);border-left:1px solid var(--line2);border-top:1px solid var(--line2);transform:rotate(45deg);border-radius:2px 0 0 0}
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <div class="mascot-wrap" id="mascot-wrap" >
+        <span class="aura" data-pulse aria-hidden="true"></span><span class="ring"></span><span class="ring b"></span>
+        <span class="gshadow" aria-hidden="true"></span><span id="mascot-img"></span>
+      </div>
+      <div class="below" id="below">
+        <div class="pill" id="bubble">
+          <div class="rowp"><span class="dot"></span><b id="state-t">Ready</b><span class="bars"><i></i><i></i><i></i><i></i><i></i></span><span class="m" id="wxm"></span></div>
+          <p id="status"></p>
+          <div id="prog"></div>
+        </div>
+        <div id="toasts" style="width:100%;display:grid;gap:5px"></div>
+      </div>
+    </div>
+    <script>
+/*ENGINE*/
+    </script>
+    <script>
+/*CORE*/
+/*CARDS*/
+(() => {
+  const { $, st, on, api, setHover } = A, stage = $('#stage'), wrap = $('#mascot-wrap'), statusEl = $('#status'), toasts = $('#toasts');
+  const fit = () => Math.round(Math.max(64, Math.min(116, stage.getBoundingClientRect().width * 0.44)));
+  const pet = A.mascot($('#mascot-img'), fit(), { shadow: false, lively: true });
+  const size = () => { const s = fit(); wrap.style.setProperty('--sz', s + 'px'); pet.resize(s); }; size(); addEventListener('resize', size);
+  // Tell the shell how much room the content needs (optional: lets it keep the window tight).
+  new ResizeObserver(() => { const b = $('#below').getBoundingClientRect(); api?.action?.('overlay-size', { width: 280, height: Math.ceil(b.bottom + 8) }); }).observe($('#below'));
+  const sparks = (n = 8) => { for (let i = 0; i < n; i++) { const s = document.createElement('i'), a = Math.PI * 2 * i / n + Math.random() * 0.5, d = 46 + Math.random() * 22; s.className = 'spark'; s.style.cssText = `--x:${Math.cos(a) * d}px;--y:${Math.sin(a) * d}px;--c:${['#F5B544', '#4ADE80', '#E8714F', '#5B9BF5'][i % 4]}`; wrap.appendChild(s); setTimeout(() => s.remove(), 820); } };
+  // status pill: types the message out; never covers the character
+  let typeT = null, clearT = null, shown = '';
+  const type = text => { clearInterval(typeT); if (text === shown) return; shown = text; statusEl.textContent = ''; if (!text) return; let i = 0; const step = Math.max(1, Math.round(text.length / 45)); typeT = setInterval(() => { i += step; statusEl.textContent = text.slice(0, i); if (i >= text.length) clearInterval(typeT); }, 22); };
+  on('change', s => {
+    stage.classList.toggle('busy', s.busy); $('#bubble').classList.toggle('quiet', s.state === 'idle' && !s.text); $('#state-t').textContent = s.label; clearTimeout(clearT);
+    const sticky = s.busy || s.state === 'listening' || s.state === 'speaking'; type(s.text);
+    if (!sticky && s.text) clearT = setTimeout(() => type(''), Math.min(9000, 3500 + s.text.length * 50));
+    const p = s.task.progress, steps = s.task.steps, done = steps.filter(x => x.state === 'done').length;
+    $('#prog').innerHTML = s.busy && (p != null || steps.length) ? `<div class="pbar run"><i style="width:${p ?? Math.round(done / steps.length * 100)}%"></i></div><div class="f" style="text-align:center">${steps.length ? `Step ${Math.min(steps.length, done + 1)} of ${steps.length}` : ''}${p != null ? (steps.length ? ' · ' : '') + p + '%' : ''}</div>` : '';
+  });
+  on('state', s => { if (s.state === 'done' || s.state === 'celebrate') { pet.hop(1.3); sparks(10); } else if (s.state === 'listening' || s.state === 'error') pet.hop(0.7); });
+  const wx = () => { const d = A.WX.data; $('#wxm').textContent = ''; };
+  on('weather', wx); on('tick', wx); on('change', wx);
+  // notifications: what finished, what needs you. Newest on top, at most two.
+  const drop = el => { if (!el || el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 300); };
+  on('notify', n => { pet.hop(1); if (n.kind !== 'done') pet.react('notification'); const el = document.createElement('div'); el.className = 'toast'; el.dataset.id = n.id; el.innerHTML = Cards.noteHtml(n, true); toasts.prepend(el); while (toasts.children.length > 2) toasts.lastChild.remove(); setTimeout(() => drop(el), n.kind === 'ask' ? 20000 : 8000); });
+  toasts.addEventListener('click', e => { const t = e.target.closest('.toast'), b = e.target.closest('[data-act]'); if (b) { const [id, choice] = (b.dataset.act.split(':')[2] || '').split('|'); A.act('notification', choice, { id }); const i = A.notes.findIndex(x => x.id === id); if (i >= 0) A.notes.splice(i, 1); } else api?.show?.(); drop(t); });
+
+  // hover: wave hello. No scaling, no buttons.
+  let lastActive = performance.now(), asleep = false;
+  const wake = () => { lastActive = performance.now(); if (asleep) { asleep = false; pet.react('hello'); } };
+  stage.addEventListener('mouseenter', () => { setHover(true); stage.classList.add('hover'); if (asleep) wake(); else if (st.state === 'idle') pet.react('hello'); lastActive = performance.now(); });
+  stage.addEventListener('mouseleave', () => { setHover(false); stage.classList.remove('hover'); });
+  document.addEventListener('mouseleave', () => { setHover(false); stage.classList.remove('hover'); }); setHover(false);
+  on('change', () => { lastActive = performance.now(); asleep = false; });
+  setInterval(() => { if (!asleep && st.state === 'idle' && performance.now() - lastActive > 150000) { asleep = true; pet.react('sleeping'); } else if (asleep) pet.play('sleeping'); }, 4000);
+  wrap.addEventListener('contextmenu', e => { e.preventDefault(); api?.action?.('overlay-menu', { x: e.screenX, y: e.screenY }); });   // host shows a native menu (hide mascot, widgets, notch…)
+  // click opens Aegis, double-click talks, drag moves the window. Screen coordinates + pointer capture keep the drag exact on scaled Windows displays.
+  let drag = null, wasDragged = false;
+  wrap.addEventListener('click', () => { if (wasDragged) return; wake(); pet.hop(1); sparks(6); setHover(true); A.toggleVoice(); });      // click the mascot → listen
+  wrap.addEventListener('dblclick', () => api?.show?.());
+  wrap.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = { x: e.screenX, y: e.screenY, moved: false }; wasDragged = false; try { wrap.setPointerCapture(e.pointerId); } catch {} });
+  wrap.addEventListener('pointermove', e => { if (!drag) return; const dx = e.screenX - drag.x, dy = e.screenY - drag.y; if (!drag.moved && Math.hypot(dx, dy) < 5) return; if (!drag.moved) { drag.moved = true; wasDragged = true; pet.react('confused'); } if (dx || dy) { drag.x = e.screenX; drag.y = e.screenY; api?.action?.('move-overlay', { dx, dy }); pet.sway(dx / 14); } });
+  const end = e => { if (!drag) return; if (drag.moved) pet.hop(0.8); drag = null; try { wrap.releasePointerCapture(e.pointerId); } catch {} setTimeout(() => { wasDragged = false; }, 220); };
+  wrap.addEventListener('pointerup', end); wrap.addEventListener('pointercancel', end);
+  // Windows click-through fallback: only the character and the things below it take the mouse.
+  document.addEventListener('mousemove', e => { const t = document.elementFromPoint(e.clientX, e.clientY), over = !!(t && t.closest('.mascot-wrap,.below')); setHover(over); stage.classList.toggle('hover', over); });
+  on('spawn', () => { pet.hop(0.9); pet.fidget('stretch'); }); on('agent-done', () => pet.fidget('nod'));   // subagents themselves are shown in the notch, not here
+  // Voice commands are normally run by the notch page. Load this page with ?commands=1 if the notch is switched off.
+  if (new URLSearchParams(location.search).get('commands') === '1') on('heard', h => { const c = h.intent && h.intent.cmd; if (c === 'open') api?.show?.(); else if (c === 'widgets') (api?.showWidgets || api?.toggleWidgets)?.(); else if (c === 'widgets-hide') api?.hideWidgets?.(); else if (c === 'notch') api?.toggleNotch?.(); });
+  A.start();
+})();
+    </script>
+  
+<script>
+/* Pointer routing for a transparent, click-through surface window: stay
+   click-through over empty space, become interactive over real controls.
+   Without this the notch/widgets buttons and the mascot were unclickable. */
+(() => {
+  let interactive = false;
+  const sample = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const isControl = !!el && el !== document.body && el !== document.documentElement;
+    if (isControl !== interactive) {
+      interactive = isControl;
+      (window.aegis && window.aegis.setClickThrough)
+        ? window.aegis.setClickThrough(!isControl)
+        : undefined;
+    }
+  };
+  document.addEventListener('mousemove', (e) => sample(e.clientX, e.clientY), true);
+  document.addEventListener('mouseleave', () => {
+    if (interactive) {
+      interactive = false;
+      if (window.aegis && window.aegis.setClickThrough) window.aegis.setClickThrough(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

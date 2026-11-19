@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com;" />
+    <title>Aegis notch</title>
+    <script>
+      window.addEventListener('error', event => window.aegis?.action?.('notch-renderer-error', {
+        message: String(event.message || 'Renderer error'),
+        source: String(event.filename || ''),
+        line: event.lineno || 0,
+      }));
+      window.addEventListener('unhandledrejection', event => window.aegis?.action?.('notch-renderer-error', {
+        message: String(event.reason?.stack || event.reason || 'Unhandled renderer rejection'),
+      }));
+    </script>
+    <style>
+/*CSS*/
+/* A real notch: hangs from the top edge, stays small. Idle 300x38 · hover 372x78 · one card 400 x (<=318). */
+.anchor{position:absolute;top:var(--top,0px);left:0;right:0;display:flex;justify-content:center;pointer-events:none;zoom:var(--scale,1)}
+.island{box-sizing:border-box;pointer-events:auto;position:relative;width:var(--cw,300px);max-width:calc(100vw - 16px);height:var(--ch,38px);border-radius:0 0 var(--radius,20px) var(--radius,20px);background:rgba(0,0,0,var(--island-opacity,1));border:1px solid color-mix(in srgb,var(--line) calc(var(--border,1) * 100%),transparent);border-top:0;box-shadow:0 8px 22px color-mix(in srgb,var(--shadow) calc(var(--shadow-strength,1) * 100%),transparent);overflow:hidden;contain:layout paint style;transition:border-radius .2s var(--ease),border-color .2s ease,box-shadow .2s ease}
+.island::after{content:"";position:absolute;left:18px;right:18px;bottom:0;height:2px;border-radius:2px;background:var(--state);opacity:0;transition:opacity .3s}
+.island.glass{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+.island.live{width:var(--iw,372px);border-color:color-mix(in srgb,var(--state) 40%,transparent)}.island.live::after{opacity:.9}
+.island.hover{width:var(--iw,372px)}.island.body{width:var(--bw,400px);border-radius:0 0 24px 24px}.island.body::after{opacity:0}
+.island.flash{animation:flash .9s ease}@keyframes flash{0%{box-shadow:0 8px 22px var(--shadow),0 0 0 0 color-mix(in srgb,var(--state) 70%,transparent)}100%{box-shadow:0 8px 22px var(--shadow),0 0 0 12px transparent}}
+.island.drop-target{outline:2px solid var(--accent);outline-offset:3px;filter:brightness(1.2)}
+#drop-hint{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(12,14,17,.94);color:var(--text);font-size:13px;font-weight:650;pointer-events:none}
+.island.drop-target #drop-hint{display:flex}
+.compact{position:absolute;top:0;left:0;right:0;height:38px;display:flex;align-items:center;gap:8px;padding:0 12px 0 8px;cursor:pointer;z-index:2}
+#avatar{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto}
+.copy{min-width:0;flex:1;display:flex;align-items:center;gap:6px;font-size:11.5px;white-space:nowrap}
+.copy b{font-weight:650;flex:0 0 auto}.copy em{font-style:normal;font-weight:650;color:var(--state);flex:0 0 auto}.copy em:empty{display:none}
+.copy small{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.meta{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--dim);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.island.live .meta{display:none}.island:not(.live) .compact .bars{display:none}.compact .bars{height:14px}
+.pct{font-size:11px;font-weight:700;color:var(--state);font-variant-numeric:tabular-nums}.pct:empty{display:none}
+.micd{opacity:.45}:root[data-state=listening] .micd{opacity:1;cursor:pointer}.micd{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--dim);flex:0 0 auto;transition:background .2s,color .2s}.micd svg{width:12px;height:12px}
+:root[data-state=listening] .micd{background:var(--red);color:#fff;animation:ring 1.5s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(242,85,90,.55)}70%{box-shadow:0 0 0 8px rgba(242,85,90,0)}100%{box-shadow:0 0 0 0 rgba(242,85,90,0)}}
+/* quick row: tiny icon tabs, only while hovering or while a card is open */
+.quick{position:absolute;top:38px;left:0;right:0;height:40px;display:flex;align-items:center;justify-content:center;gap:3px;padding:0 10px 6px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.quick{display:none!important}
+.quick button{position:relative;width:30px;height:30px;border-radius:10px;border:0;background:transparent;color:var(--dim);display:grid;place-items:center;cursor:pointer;padding:0;transition:background .15s,color .15s,transform .2s var(--spring)}
+.quick button:hover{background:var(--card2);color:var(--text);transform:translateY(-1px)}.quick button.on{background:var(--accent-soft);color:var(--accent2)}.quick svg{width:15px;height:15px}
+.quick .sep{width:1px;height:16px;background:var(--line2);margin:0 4px}
+.quick .cnt{position:absolute;top:1px;right:1px;min-width:13px;height:13px;border-radius:7px;background:var(--accent);color:#fff;font-size:8.5px;font-weight:700;display:grid;place-items:center;padding:0 3px}.quick .cnt:empty{display:none}
+.bodyw{position:absolute;left:0;right:0;top:38px;max-height:240px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .22s ease .06s,top .3s var(--ease)}
+.island.q .bodyw{top:78px}.island.body .bodyw{opacity:1;pointer-events:auto}
+#view .w{display:block;background:transparent;border:0;border-radius:0;padding:2px 16px 14px;animation:vin .35s var(--ease) both}#view .w.off{display:none!important}.wh{display:none}
+@keyframes vin{from{opacity:0;transform:translateY(6px)}}
+#empty{padding:6px 16px 16px;font-size:11.5px;color:var(--dim);display:none}#empty b{display:block;color:var(--text);font-size:12.5px;margin-bottom:2px}
+#notebox{padding:4px 14px 14px;display:none}.island.note #notebox{display:block}.island.note #view,.island.note #empty{display:none!important}
+.island.open{width:var(--ew,620px);height:var(--eh,320px);border-radius:0 0 calc(var(--radius,20px) + 4px) calc(var(--radius,20px) + 4px)}.island.open::after{opacity:0}
+#vx{position:absolute;right:11px;top:8px;width:22px;height:22px;border-radius:50%;border:0;background:var(--card2);color:var(--dim);display:none;place-items:center;cursor:pointer;padding:0;z-index:4}#vx svg{width:11px;height:11px}.island.body:not(.note) #vx{display:grid}.island.body:not(.note) .micd{visibility:hidden}
+/* workspace: opens on hover, one row of coloured cards */
+.ws{position:absolute;top:var(--ch,38px);left:0;right:0;height:calc(var(--eh,320px) - var(--ch,38px));padding:0 10px 12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;overflow-x:hidden;max-width:100%;overscroll-behavior:contain;opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .2s ease .08s,transform .35s var(--ease)}
+.island.open .ws{opacity:1;pointer-events:auto;transform:none}
+.wsh{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:30px;flex:0 0 auto;padding:0 2px;overflow:hidden}
+.wsh .oa{height:25px;padding:0 11px;border-radius:9px;border:1px solid transparent;background:var(--card2);color:var(--text);font:inherit;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,transform .15s}.wsh .oa svg{width:12px;height:12px}.wsh .oa:hover{background:var(--card3);border-color:var(--line2)}.wsh .oa:active{transform:scale(.96)}
+.wsh .oa.ic{width:25px;padding:0;justify-content:center;background:transparent;border-color:transparent;color:var(--dim)}.wsh .oa.ic:hover{background:var(--card2);color:var(--text)}.wsh .oa.ic svg{width:14px;height:14px}
+.wsh .talkb{background:var(--accent);color:#fff}.wsh .talkb:hover{background:var(--accent2);border-color:transparent}:root[data-state=listening] .wsh .talkb{background:var(--red)}.seg{margin-left:auto;display:flex;gap:2px;background:var(--card2);border-radius:10px;padding:3px;border:1px solid var(--line)}.seg button{height:19px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--dim);font:inherit;font-size:10.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}.seg button:hover{color:var(--text)}.seg button.on{background:var(--card3);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.28)}
+.wsb{display:none;gap:8px;flex-wrap:wrap;align-content:flex-start}.wsb.on{display:grid;min-width:0;max-width:100%;grid-template-columns:repeat(auto-fit,minmax(164px,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(74px,auto);gap:8px;min-height:0;flex:1 1 auto;align-content:stretch;overflow-y:auto;overscroll-behavior:contain}.wsb .tile{min-width:0;flex:none;min-height:0;height:auto}.wsb .t-tasks{grid-row:span 2}@media(max-width:430px){.wsb .t-tasks{grid-row:auto}}
+.callbar{display:flex;align-items:center;gap:6px;height:34px;padding:0 4px 0 10px;border-radius:11px;background:var(--card2);border:1px solid var(--line);flex:0 0 auto}.callbar .cbk{font-size:11px;font-weight:700;color:var(--accent2)}.callbar input{flex:1;min-width:0;border:0;background:transparent;outline:0;font:inherit;font-size:11.5px;color:var(--text)}.callbar input::placeholder{color:var(--faint)}.callbar .cbs{width:26px;height:26px;padding:0;border:0;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}.callbar .cbs svg{width:13px;height:13px}
+.mbar{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:10px;background:color-mix(in srgb,var(--blue) 16%,var(--card2));border:1px solid color-mix(in srgb,var(--blue) 34%,transparent);font-size:11px;flex:0 0 auto;overflow:hidden}.mbar[hidden]{display:none}.mbar b,.mbar span{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mbar b{font-weight:650}.mbar span{color:var(--dim)}.mbar .sp{margin-left:auto}.mbar button{height:21px;padding:0 8px;border:0;border-radius:7px;background:var(--blue);color:#fff;font:inherit;font-size:10.5px;font-weight:650;cursor:pointer;flex:0 0 auto}.mbar button.alt{background:var(--card3);color:var(--text)}
+.tile{position:relative;border-radius:18px;padding:13px 14px;color:#14181a;min-width:150px;flex:1 1 160px;min-height:172px;display:flex;flex-direction:column;gap:8px;overflow:hidden;background-color:var(--tc);border:1px solid rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -14px 26px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.18);background-image:linear-gradient(155deg,rgba(255,255,255,.24),rgba(255,255,255,0) 48%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");transition:transform .2s var(--ease),box-shadow .2s ease}
+.tile:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.46),0 12px 26px rgba(0,0,0,.26)}
+.tile h4{margin:0;font-size:12px;font-weight:650;display:flex;align-items:center;gap:6px}.tile h4 svg{width:13px;height:13px}.tile h4 span{margin-left:auto;font-weight:500;font-size:10.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
+.tile .ft{margin-top:auto;font-size:9.5px;opacity:.65;display:flex;justify-content:space-between}
+.t-tasks{--tc:#8DB89A;flex:1.55}.t-focus{--tc:#A99AD4;flex:.95;align-items:center;text-align:center}.t-pad{--tc:#C9BE6A;flex:1}.t-ev{--tc:#93B4D6;flex:1.05}
+.t-files{--tc:#91A9C7;flex:1.1 1 160px;display:flex}.t-files .file-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0}.t-files .file-item{display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;background:rgba(0,0,0,.08);font-size:10.5px;cursor:pointer}.t-files .file-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.t-files .file-item button{border:0;background:transparent;color:#14181a;opacity:.55;cursor:pointer;padding:0 2px;font:inherit}.t-files .file-item button:hover{opacity:1}
+.tin{display:flex;align-items:center;gap:6px;height:28px;padding:0 9px;border-radius:9px;background:rgba(0,0,0,.09);flex:0 0 auto}.tin input{flex:1;min-width:0;border:0;background:transparent;outline:0;font:inherit;font-size:11.5px;color:#14181a}.tin input::placeholder{color:rgba(20,24,26,.5)}
+.tl{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0}
+.tk{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:10px;background:rgba(0,0,0,.06);font-size:11.5px;cursor:pointer;transition:background .15s,transform .15s}.tk:hover{background:rgba(0,0,0,.11);transform:translateX(1px)}.tk i{width:14px;height:14px;flex:0 0 14px;border-radius:50%;border:1.5px solid rgba(20,24,26,.6);display:grid;place-items:center;font-style:normal;font-size:9px}
+.tk.dn{opacity:.55}.tk.dn span{text-decoration:line-through}.tk.dn i{background:#14181a;color:#fff;border-color:#14181a}.tk span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tk b{font-weight:500;opacity:0;font-size:13px;line-height:1}.tk:hover b{opacity:.6}
+.dm{font:650 30px/1 ui-monospace,Consolas,monospace;letter-spacing:-.5px;margin-top:10px;color:#14181a;font-variant-numeric:tabular-nums}
+.fbar{width:70%;height:3px;border-radius:2px;background:rgba(0,0,0,.14);overflow:hidden}.fbar i{display:block;height:100%;background:#14181a;width:0}
+.fb{display:flex;gap:6px;margin-top:4px}.fb button{height:28px;border:0;border-radius:8px;background:#14181a;color:#fff;font:inherit;font-size:11.5px;font-weight:600;padding:0 12px;cursor:pointer;display:flex;align-items:center;gap:5px}.fb button svg{width:11px;height:11px}.fb .ok{border-radius:50%;width:28px;padding:0;justify-content:center;background:rgba(20,24,26,.75)}
+.lk{border:0;background:transparent;font:inherit;font-size:10.5px;color:#14181a;opacity:.7;cursor:pointer;padding:0}.lk:hover{opacity:1}
+.t-pad textarea{flex:1;min-height:0;border:0;border-top:1px solid rgba(0,0,0,.14);background:transparent;outline:0;resize:none;font:inherit;font-size:11.5px;line-height:1.4;color:#14181a;padding:7px 0 0}.t-pad textarea::placeholder{color:rgba(20,24,26,.5)}
+.evl{display:flex;flex-direction:column;gap:5px;overflow-y:auto;min-height:0}.ev1{padding:6px 8px;border-radius:9px;background:rgba(0,0,0,.09);font-size:11px}.ev1 b{display:block;font-size:11.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev1 em{font-style:normal;font-weight:650;font-size:10px}
+.sub{font-size:9.5px;font-weight:700;letter-spacing:.06em;opacity:.6}
+#deck2{display:none;min-width:0;max-width:100%;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;overflow-y:auto;align-content:start;min-height:0;padding-bottom:4px}#deck2.on{display:grid}#deck2 .w{display:block;width:100%;min-width:0;margin:0;border-radius:16px;padding:11px 13px}#deck2 .w.off{display:none!important}
+#deck2 .deck-empty{grid-column:1/-1;display:flex;flex-direction:column;gap:3px;padding:14px;border:1px dashed var(--line2);border-radius:14px;color:var(--dim);font-size:11.5px}.deck-empty b{color:var(--text);font-size:12px;font-weight:650}
+@media(max-width:560px){#deck2{grid-template-columns:1fr}}
+.stack{display:flex;align-items:center;flex:0 0 auto}.stack:empty{display:none}.stack{cursor:pointer}.stack span{transition:transform .2s var(--spring)}.stack span:hover{transform:translateY(-2px) scale(1.18);z-index:2;position:relative;border-color:var(--blue)}.stack span{width:22px;height:22px;border-radius:50%;background:var(--card2);border:1.5px solid #000;display:grid;place-items:center;margin-left:-7px;animation:stin .5s var(--spring) both}.stack span:first-child{margin-left:0}.stack b{font-size:10px;font-weight:700;color:var(--blue);margin-left:4px}
+@keyframes stin{from{transform:scale(0) translateY(8px);opacity:0}}
+.island.agents{width:var(--iw,372px);border-color:color-mix(in srgb,var(--blue) 45%,transparent)}.island.agents.body{width:var(--bw,400px)}.island.agents.open{width:var(--ew,620px)}
+#view .w-x{padding:2px 12px 12px}#view .xgrid{grid-template-columns:repeat(3,1fr)}#view .x{background:var(--card)}
+#deck2 .tin{background:var(--card2);border:1px solid var(--line2)}#deck2 .tin input{color:var(--text)}#deck2 .tin input::placeholder{color:var(--faint)}
+#deck2[data-t=widgets]{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}#deck2 .w-pins{display:block;background:transparent;border:0;padding:0;overflow:visible}#deck2 .w-pins .xgrid{grid-template-columns:repeat(4,1fr)}
+#say{position:fixed;left:50%;bottom:58px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:min(660px,96vw)}
+#say button{height:24px;padding:0 10px;border-radius:99px;border:1px solid var(--line2);background:#17171b;color:var(--text);font:inherit;font-size:11px;cursor:pointer}
+@media(max-width:520px){.board{grid-template-columns:1fr!important;padding:10px!important;gap:8px!important}.board>*{min-width:0}.top{padding-inline:10px!important}.grid{grid-template-columns:1fr!important}}
+#nset{position:absolute;inset:calc(var(--ch,38px) + 3px) 10px 10px;display:none;flex-direction:column;gap:7px;padding:12px 14px;overflow-y:auto;border:1px solid var(--line2);border-radius:16px;background:linear-gradient(180deg,#17171b,#0e0e11);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.island.nset #nset{display:flex}.island.nset .wsh,.island.nset #work,.island.nset #deck2{display:none!important}.island.nset .ws{overflow:hidden}
+#nset h5{margin:7px 0 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}#nset h5:first-of-type{margin-top:0}
+#nset .row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+#nset .row label{flex:0 0 108px;color:var(--text)}
+#nset .row output{flex:0 0 42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+#nset input[type=range]{flex:1;accent-color:var(--accent);height:18px}
+#nset select{flex:1;height:24px;border-radius:7px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font:inherit;font-size:11px;padding:0 6px}
+#nset .foot{position:sticky;bottom:-12px;display:flex;gap:8px;margin-top:auto;padding:12px 0 2px;background:linear-gradient(180deg,rgba(14,14,17,0),#0e0e11 40%)}
+#nset button{height:26px;padding:0 10px;border-radius:7px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font:inherit;font-size:11px;cursor:pointer}
+#nset button.primary{background:var(--accent);border-color:transparent;color:#fff}
+</style>
+  </head>
+  <body>
+    <div class="anchor">
+      <div class="island" id="island">
+        <div id="drop-hint">Drop files to add them to your Aegis tray</div>
+        <div class="compact" id="compact">
+          <span id="avatar"></span>
+          <div class="copy" id="open"><b id="brand">Aegis</b><em id="chip"></em><small id="status"></small></div>
+          <span class="stack" id="stack" title="Subagents"></span>
+          <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="pct" id="pct"></span>
+          <span class="meta" id="meta"></span>
+          <span class="micd" id="voice" data-i="mic"></span>
+        </div>
+        <div class="quick" id="quick"></div><button id="vx" title="Close" data-i="x"></button>
+        <div class="ws" id="ws">
+          <div class="wsh"><button class="oa talkb" id="talk" data-i="mic">Talk</button><button class="oa" id="open-app" data-i="open">Open app</button><div class="seg" id="tabs"><button data-t="work" class="on">Workspace</button><button data-t="live">Live</button><button data-t="agents">Agents</button></div></div>
+          <div class="callbar"><span class="cbk">/</span><input id="callin" placeholder="Ask Aegis or /call weather, /call meeting, /call tasks…" maxlength="200" autocomplete="off"/><button class="cbs" id="callgo" data-i="send" title="Send" aria-label="Send"></button></div>
+          <div class="mbar" id="mbar" hidden></div>
+          <div class="wsb on" id="work">
+            <div class="tile t-tasks"><h4><span style="margin:0;opacity:1" data-ic="check"></span>Today’s tasks<span id="tcount"></span></h4><div class="tin">+<input id="tnew" placeholder="What needs doing?" maxlength="140"/></div><div class="tl noscroll" id="tlist"></div><div class="ft"><span>Say “add task …”</span><span id="tdate"></span></div></div>
+            <div class="tile t-focus"><div class="dm" id="ftime">25:00</div><span class="sub" id="fstate">READY</span><div class="fbar"><i id="fbar"></i></div><div class="fb"><button id="fgo"></button><button class="ok" id="fdone" title="Finish session">✓</button></div><button class="lk" id="fset">Set time</button></div>
+            <div class="tile t-pad"><h4>Notepad</h4><span class="sub" id="pdate"></span><textarea id="pad" placeholder="Finish something that matters first" maxlength="4000"></textarea><div class="ft"><span id="pwords">0 words</span></div></div>
+            <div class="tile t-ev"><h4>Events<span id="evn"></span></h4><div class="evl noscroll" id="evl"></div></div>
+            <div class="tile t-files"><h4>File tray<span id="file-count">0</span></h4><div class="file-list noscroll" id="file-list"></div><div class="ft"><span>Drop files on the notch</span></div></div>
+          </div>
+          <div id="nset" class="noscroll">
+            <h5>Notch appearance</h5>
+            <div class="row"><label for="ns-place">Placement</label><select id="ns-place"><option value="center">Centered</option><option value="left">Left edge</option><option value="right">Right edge</option></select></div>
+            <div class="row"><label for="ns-offset">Horizontal nudge</label><input id="ns-offset" type="range" min="-600" max="600" step="2" /><output id="ns-offset-o">0</output></div>
+            <div class="row"><label for="ns-cw">Compact width</label><input id="ns-cw" type="range" min="220" max="460" step="2" /><output></output></div>
+            <div class="row"><label for="ns-ew">Expanded width</label><input id="ns-ew" type="range" min="480" max="900" step="4" /><output></output></div>
+            <div class="row"><label for="ns-eh">Expanded height</label><input id="ns-eh" type="range" min="220" max="620" step="4" /><output></output></div>
+            <div class="row"><label for="ns-scale">Interface scale</label><input id="ns-scale" type="range" min="0.8" max="1.4" step="0.05" /><output></output></div>
+            <h5>Cutout</h5>
+            <div class="row"><label for="ns-radius">Corner radius</label><input id="ns-radius" type="range" min="0" max="40" step="1" /><output></output></div>
+            <div class="row"><label for="ns-gap">Top gap</label><input id="ns-gap" type="range" min="0" max="60" step="1" /><output></output></div>
+            <div class="row"><label for="ns-border">Border strength</label><input id="ns-border" type="range" min="0" max="1" step="0.05" /><output></output></div>
+            <div class="row"><label for="ns-shadow">Shadow strength</label><input id="ns-shadow" type="range" min="0" max="1" step="0.05" /><output></output></div>
+            <div class="row"><label for="ns-blur">Glass blur</label><input id="ns-blur" type="checkbox" /><output></output></div>
+            <h5>Behaviour</h5>
+            <div class="row"><label for="ns-hover">Hover delay</label><input id="ns-hover" type="range" min="0" max="900" step="10" /><output></output></div>
+            <div class="row"><label for="ns-close">Close delay</label><input id="ns-close" type="range" min="0" max="900" step="10" /><output></output></div>
+            <div class="foot"><button id="ns-reset">Reset notch</button><button class="primary" id="ns-done">Done</button></div>
+          </div>
+          <div id="deck2" class="noscroll"></div>
+        </div>
+        <div class="bodyw noscroll" id="panel"><div id="notebox"></div><div id="view"></div><div id="empty"></div></div>
+        <i id="progress" hidden></i>
+      </div>
+    </div>
+    <script>
+/*ENGINE*/
+    </script>
+    <script>
+/*CORE*/
+/*CARDS*/
+/*LIB*/
+(() => {
+  const { $, st, on, api, setHover } = A, island = $('#island'), box = $('#notebox'), viewEl = $('#view'), empty = $('#empty'), quick = $('#quick');
+  // icon tabs shown on hover: [view id, icon, tooltip]
+  const QUICK = [['schedule', 'cal', 'Calendar'], ['weather', 'cloud', 'Weather'], ['media', 'play', 'Music'], ['timer', 'timer', 'Timers'], ['agents', 'agent', 'Agents'], ['system', 'cpu', 'System'], ['notes', 'bell', 'Activity'], ['ask', 'search', 'Type a question']];
+  const NAMES = { x: 'widget', subagents: 'subagent', notepad: 'notes', harness: 'harness', agentrun: 'task launcher', clock: 'time', schedule: 'calendar', weather: 'weather', media: 'music', live: 'live activity', system: 'system usage', devices: 'device', market: 'market', tracking: 'delivery', navigation: 'navigation', health: 'health', payment: 'payment', agents: 'agent', research: 'task', alarms: 'alarm', call: 'call', meeting: 'meeting', security: 'security', model: 'model' };
+  const pet = A.mascot($('#avatar'), 28, { fps: 30, shadow: false, lively: true });
+  let xs = []; Cards.DEF.x = { need: () => xs.length, html: () => `<div class="xgrid">${xs.map(id => Lib.tile(id)).join('')}</div>` }; Cards.DEF.pins = { html: () => `<div class="xgrid">${Lib.pinned().map(id => Lib.tile(id)).join('')}</div>` };
+  Cards.mount(viewEl, [...Cards.ALL.filter(id => id !== 'assistant'), 'x']); viewEl.addEventListener('click', e => { if (Lib.click(e)) Cards.refreshAll(); });
+  let view = null, note = null, hover = false, viewT = null, noteT = null, pending = null, open = false, suppressHoverOpen = false, dwellT = null, closeT = null, tab = 'work', settingsToggle = null;
+  // ---- Notch appearance settings (persisted by the desktop shell) ----
+  const NOTCH_DEFAULTS = { placement: 'center', offsetX: 0, compactWidth: 300, compactHeight: 38, expandedWidth: 620, expandedHeight: 360, scale: 1, topGap: 0, radius: 22, border: 1, shadow: 1, blur: false, hoverDelay: 240, closeDelay: 220, hideWhenIdle: false };
+  let notchCfg = { ...NOTCH_DEFAULTS };
+  const applyNotchCfg = next => {
+    notchCfg = { ...notchCfg, ...(next && typeof next === 'object' ? next : {}) };
+    const root = document.documentElement.style;
+    root.setProperty('--cw', notchCfg.compactWidth + 'px');
+    root.setProperty('--ch', notchCfg.compactHeight + 'px');
+    root.setProperty('--iw', Math.round(notchCfg.compactWidth * 1.24) + 'px');
+    root.setProperty('--bw', Math.round(notchCfg.compactWidth * 1.33) + 'px');
+    root.setProperty('--ew', notchCfg.expandedWidth + 'px');
+    root.setProperty('--eh', notchCfg.expandedHeight + 'px');
+    root.setProperty('--top', notchCfg.topGap + 'px');
+    root.setProperty('--radius', notchCfg.radius + 'px');
+    root.setProperty('--border', String(notchCfg.border));
+    root.setProperty('--shadow', String(notchCfg.shadow));
+    root.setProperty('--scale', String(notchCfg.scale));
+    // Glass mode: the island keeps a translucent tint and blurs the desktop
+    // behind it. The Electron window is already transparent, so the blur only
+    // costs anything while it is on.
+    root.setProperty('--island-opacity', notchCfg.blur ? '0.72' : '1');
+    island.classList.toggle('glass', notchCfg.blur === true);
+    syncNotchForm();
+  };
+  // ---- workspace (hover): tasks, focus timer, notepad, events. Everything is stored on this PC. ----
+  const store = A.store, day = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }, esc = A.esc, mmss = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const DECK = { live: ['agent', 'voice', 'live', 'coding', 'media', 'weather', 'system', 'devices', 'market', 'tracking', 'navigation', 'health', 'payment', 'clipboard'], agents: ['agentrun', 'subagents', 'research', 'notepad', 'harness', 'notes', 'security', 'model', 'voice'] };
+  const deck2 = $('#deck2'); Cards.mount(deck2, [...DECK.live, ...DECK.agents, 'pins']); deck2.addEventListener('click', e => { if (Lib.click(e)) Cards.refreshAll(); });
+  let tasks = store.get('aegis.tasks', []); const saveTasks = () => { store.set('aegis.tasks', tasks); api?.action?.('widget', { id: 'tasks', action: 'changed', value: tasks }); drawTasks(); };
+  let fileTray = store.get('aegis.file-tray', []);
+  const drawFileTray = () => { $('#file-count').textContent = fileTray.length; island.classList.toggle('has-files', fileTray.length > 0); $('#file-list').innerHTML = fileTray.slice(0, 20).map((f, i) => `<div class="file-item" data-file="${i}" title="${esc(f.name)}"><span>${esc(f.name)}</span><button type="button" data-use="${i}" title="Add to the current chat" aria-label="Use ${esc(f.name)} in chat">Use</button><button type="button" data-remove="${i}" title="Remove from tray" aria-label="Remove ${esc(f.name)}">×</button></div>`).join(''); };
+  const saveFileTray = () => { fileTray = fileTray.slice(0, 100); store.set('aegis.file-tray', fileTray); drawFileTray(); };
+  $('#file-list').addEventListener('click', e => { const remove = e.target.closest('[data-remove]'); if (remove) { e.stopPropagation(); fileTray.splice(+remove.dataset.remove, 1); saveFileTray(); return; } const use = e.target.closest('[data-use]'); if (use) { e.stopPropagation(); const file = fileTray[+use.dataset.use]; if (file) api?.action?.('file-tray-select', { path: file.path, name: file.name }); return; } const item = e.target.closest('[data-file]'); if (item) void api?.openWorkspaceFile?.(fileTray[+item.dataset.file]?.path); });
+  const drawTasks = () => { $('#tcount').textContent = tasks.filter(t => t.done).length + ' / ' + tasks.length; $('#tlist').innerHTML = tasks.map((t, i) => `<div class="tk${t.done ? ' dn' : ''}" data-i="${i}"><i>${t.done ? '✓' : ''}</i><span>${esc(t.text)}</span><b data-x="1" title="Remove">×</b></div>`).join('') || '<div style="font-size:11px;opacity:.6;padding:4px 2px">Nothing yet. Type it or say it.</div>'; };
+  const addTask = text => { text = String(text || '').trim(); if (!text) return; tasks.unshift({ text: text[0].toUpperCase() + text.slice(1), done: false, at: Date.now() }); saveTasks(); };
+  $('#tnew').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { addTask(e.target.value); e.target.value = ''; } else if (e.key === 'Escape') e.target.blur(); });
+  $('#tlist').addEventListener('click', e => { const r = e.target.closest('.tk'); if (!r) return; const i = +r.dataset.i; if (e.target.dataset.x) tasks.splice(i, 1); else tasks[i].done = !tasks[i].done; saveTasks(); });
+  let focus = store.get('aegis.focus', { len: 1500, left: 1500, end: null }); const LENS = [900, 1500, 2700, 3600];
+  const fLeft = () => focus.end ? Math.max(0, Math.round((focus.end - Date.now()) / 1000)) : focus.left;
+  const saveFocus = () => { store.set('aegis.focus', focus); drawFocus(); meta(); };
+  const drawFocus = () => { const l = fLeft(), run = !!focus.end; $('#ftime').textContent = mmss(l); $('#fstate').textContent = run ? 'FOCUSING' : l < focus.len ? 'PAUSED' : 'READY'; $('#fbar').style.width = (100 - l / focus.len * 100) + '%'; $('#fgo').innerHTML = A.icon(run ? 'pause' : 'play') + (run ? 'Pause' : l < focus.len ? 'Resume' : 'Start'); $('#fset').textContent = 'Set time · ' + Math.round(focus.len / 60) + ' min'; };
+  const focusGo = on2 => { if (on2 && !focus.end) focus.end = Date.now() + (fLeft() || focus.len) * 1000; else if (!on2 && focus.end) { focus.left = fLeft(); focus.end = null; } saveFocus(); };
+  const focusReset = () => { focus = { len: focus.len, left: focus.len, end: null }; saveFocus(); };
+  $('#fgo').addEventListener('click', () => focusGo(!focus.end)); $('#fdone').addEventListener('click', focusReset);
+  $('#fset').addEventListener('click', () => { focus.len = LENS[(LENS.indexOf(focus.len) + 1) % LENS.length]; focusReset(); });
+  const pad = $('#pad'); pad.value = store.get('aegis.pad.' + day(), ''); const words = () => { $('#pwords').textContent = (pad.value.trim() ? pad.value.trim().split(/\s+/).length : 0) + ' words'; }; pad.addEventListener('input', () => { store.set('aegis.pad.' + day(), pad.value); words(); }); pad.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') pad.blur(); });
+  const drawEvents = () => { drawMeetingBar(); const sc = A.W.schedule, m = A.W.meeting, items = (sc && sc.items) || []; $('#evn').textContent = items.length ? items.length + (sc.more ? '+' : '') : ''; $('#evl').innerHTML = (m ? `<div class="ev1"><span class="sub">NEXT MEETING</span><b>${esc(m.title || 'Meeting')}</b>${esc(/^\d{4}-\d\d-\d\dT/.test(m.start || '') ? A.hm(new Date(m.start)) : m.start || '')} <button class="lk" data-join="1" style="font-weight:700;opacity:1;float:right">Join</button></div>` : '') + (items.length ? '<span class="sub">TODAY</span>' + items.slice(0, 4).map(e => `<div class="ev1"><b>${esc(e.title)}</b>${esc(e.start || '')}${e.end ? ' – ' + esc(e.end) : ''}</div>`).join('') : m ? '' : '<div style="font-size:11px;opacity:.6">No events today.</div>'); };
+  $('#evl').addEventListener('click', e => { if (e.target.dataset.join) A.act('meeting', 'join'); });
+  let mediaPoll = null;
+  let externalAgentPoll = null;
+  const pollMedia = async () => { try { const data = await api?.getMediaSession?.(); A.setData({ media: data?.available ? data : null }); } catch { A.setData({ media: null }); } };
+  const pollExternalAgents = async () => { try { const result = await api?.getExternalAgents?.(); A.setData({ codingAgents: { enabled: result?.enabled === true, agents: result?.agents || [] } }); } catch { A.setData({ codingAgents: { enabled: false, agents: [] } }); } };
+  // The harness card reports the real native engine: its runtimes, the tool set
+  // it exposes and the MCP servers that are installed, straight from the host.
+  const pollHarness = async () => { try { const h = await api?.getHarness?.(); A.setData({ harness: h || { status: null, servers: {}, error: 'The Aegis host is not answering.' } }); } catch { A.setData({ harness: { status: null, servers: {}, error: 'The Aegis host is not answering.' } }); } };
+  let harnessPoll = null;
+  void pollHarness();
+  const setTab = t => { tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#work').classList.toggle('on', t === 'work'); deck2.classList.toggle('on', t !== 'work'); deck2.dataset.t = t; if (t !== 'work') { deck2.querySelectorAll('.w').forEach(s => s.classList.toggle('off', !DECK[t].includes(s.dataset.w))); deck2.scrollTop = 0; } requestAnimationFrame(deck2Hint); clearInterval(mediaPoll); mediaPoll = null; clearInterval(externalAgentPoll); externalAgentPoll = null; clearInterval(harnessPoll); harnessPoll = null; if (t === 'live') { void pollMedia(); mediaPoll = setInterval(() => { if (open && tab === 'live') void pollMedia(); }, 5000); void pollExternalAgents(); externalAgentPoll = setInterval(() => { if (open && tab === 'live') void pollExternalAgents(); }, 15000); } if (t === 'agents') { void pollHarness(); harnessPoll = setInterval(() => { if (open && tab === 'agents') void pollHarness(); }, 20000); } };
+  $('#tabs').addEventListener('click', e => { if (e.target.dataset.t) setTab(e.target.dataset.t); });
+  document.querySelectorAll('#work input,#work textarea').forEach(i => { i.addEventListener('focus', () => { setHover(true); api?.action?.('want-focus', true); }); i.addEventListener('blur', () => { api?.action?.('want-focus', false); if (!hover) closeT = setTimeout(closeWs, 600); }); });
+  $('#tdate').textContent = new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }); $('#pdate').textContent = new Date().toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+  on('tick', () => { if (focus.end) { if (fLeft() <= 0) { focusReset(); A.notify({ kind: 'done', title: 'Focus session finished', body: 'Nice work. Take a short break.' }); } else drawFocus(); } }); on('data', drawEvents);
+  function openWs(t) { clearTimeout(dwellT); clearTimeout(closeT); clearInterval(systemPoll); systemPoll = null; if (note) return; clearTimeout(viewT); view = null; open = true; api?.action?.('notch-expanded', { expanded: true }); if (t) setTab(t); drawTasks(); drawFileTray(); drawFocus(); drawEvents(); words(); Cards.refreshAll(); paint(); }
+  function closeWs() { clearTimeout(closeT); clearInterval(mediaPoll); mediaPoll = null; clearInterval(externalAgentPoll); externalAgentPoll = null; if (!open) return; if (typing()) document.activeElement.blur(); open = false; api?.action?.('notch-expanded', { expanded: false }); size(); }
+  $('#open-app').addEventListener('click', () => api?.show?.()); $('#vx').addEventListener('click', e => { e.stopPropagation(); closeView(); });
+  const drawQuick = () => { const n = A.notes.length; quick.innerHTML = QUICK.map(([id, ic, tip]) => `<button data-v="${id}" title="${tip}" class="${view === id ? 'on' : ''}">${A.icon(ic)}${id === 'notes' ? `<span class="cnt">${n || ''}</span>` : ''}</button>`).join('') + `<span class="sep"></span><button data-c="widgets" title="Widgets">${A.icon('grid')}</button><button data-c="open" title="Open Aegis">${A.icon('open')}</button>` + (view ? `<button data-c="close" title="Close">${A.icon('x')}</button>` : ''); };
+  // One place decides the size. The island only ever grows to a single card.
+  const size = () => {
+    const q = false, body = !open && !!(note || view); island.classList.toggle('open', open);
+    island.classList.toggle('q', q); island.classList.toggle('body', body); island.classList.toggle('note', !!note); island.classList.toggle('hover', hover);
+    let h = 38 + (q ? 40 : 0);
+    if (body) { const ph = $('#panel'); ph.style.maxHeight = (q ? 240 : 280) + 'px'; h += Math.min(q ? 240 : 280, (note ? box : (empty.style.display === 'block' ? empty : viewEl)).offsetHeight); }
+    if (open) h = 300;
+    island.style.height = open ? '' : h + 'px';
+    // The native surface is fixed; no window geometry work happens per event.
+  };
+  const paint = () => { viewEl.querySelectorAll('.w').forEach(s => s.classList.toggle('off', s.dataset.w !== view)); const cur = view && viewEl.querySelector(`.w[data-w="${view}"]`), has = cur && cur.style.display !== 'none'; empty.style.display = view && !has ? 'block' : 'none'; if (view && !has) empty.innerHTML = `<b>No ${NAMES[view] || view} data yet</b>Aegis will show it here as soon as it has some.`; drawQuick(); size(); };
+  viewEl.addEventListener('cards', () => requestAnimationFrame(paint));
+  const armView = ms => { clearTimeout(viewT); if (view && !hover && !typing()) viewT = setTimeout(closeView, ms); };
+  let systemPoll = null;
+  function openView(id, q, ms) { if (id === 'agents' || id === 'research') id = (A.W.agents && A.W.agents.length) ? 'subagents' : st.task.steps.length ? 'research' : 'subagents'; if (id === 'x') xs = (Array.isArray(q) ? q : String(q || '').split(',')).filter(i => Lib.BY[i]).slice(0, 6); if (!Cards.DEF[id]) return; if (note && note.kind === 'ask') { pending = [id, q, ms]; return; } hideNote(true); suppressHoverOpen = false; open = false; Cards.setLiveQuery(id === 'live' ? q : ''); view = id; if (id === 'system') { A.refreshSystemMetrics?.(); clearInterval(systemPoll); systemPoll = setInterval(() => { if (view === 'system') A.refreshSystemMetrics?.(); }, 5000); } else { clearInterval(systemPoll); systemPoll = null; } Cards.refreshAll(); paint(); pet.hop(0.6); armView(ms || 12000); if (id === 'ask') setTimeout(() => { const i = $('#ask-in'); i && i.focus(); }, 120); }
+  function closeView() { clearTimeout(viewT); clearInterval(systemPoll); systemPoll = null; if (!view) return; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); view = null; paint(); }
+  // Notifications keep their buttons until you answer: a question never times out and hovering never replaces it.
+  function hideNote(silent) { clearTimeout(noteT); if (!note) return; note = null; size(); if (!silent && pending) { const p = pending; pending = null; openView(...p); } }
+  const armNote = () => { clearTimeout(noteT); if (note && note.kind !== 'ask' && !hover) noteT = setTimeout(() => hideNote(), 7000); };
+  function showNote(n) { clearTimeout(viewT); clearTimeout(dwellT); if (typing()) document.activeElement.blur(); open = false; view = null; note = n; box.innerHTML = Cards.noteHtml(n, true); paint(); armNote(); }
+  box.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-act]'); if (!b) return; const [id, choice] = (b.dataset.act.split(':')[2] || '').split('|'); A.act('notification', choice, { id }); const i = A.notes.findIndex(x => x.id === id); if (i >= 0) A.notes.splice(i, 1); hideNote(); });
+  on('notify', n => { pet.hop(); showNote(n); });
+
+  // What was said decides what the notch shows. The host can also push { view: 'schedule' } directly.
+  const run = it => { if (!it) return; if (it.cmd === 'open') api?.show?.(); else if (it.cmd === 'widgets') openWs('live'); else if (it.cmd === 'call') callWidget(it.text); else if (it.cmd === 'widgets-hide') closeWs(); else if (it.cmd === 'mascot') api?.toggleMascot?.(); else if (it.cmd === 'notch') api?.toggleNotch?.(); else if (it.cmd === 'close') { closeView(); closeWs(); } else if (it.cmd === 'task') { addTask(it.text.replace(/^(add (a )?(task|to-?do)|remind me to|new task|task)\b[: ]*(to )?/, '')); openWs('work'); closeT = setTimeout(closeWs, 6000); } else if (it.cmd === 'focus') { focusGo(true); openWs('work'); closeT = setTimeout(closeWs, 5000); } else if (it.cmd === 'focus-stop') focusGo(false); else if (it.cmd === 'workspace') { openWs('work'); closeT = setTimeout(closeWs, 9000); } else if (it.view) openView(it.view, it.q); if (it.cmd) { api?.action?.('voice-command', { command: it.cmd, text: it.text }); flash(); } };
+  on('heard', h => { if (/^\/call\b/i.test(String(h.text || ''))) { callWidget(String(h.text).replace(/^\/call\s*/i, '')); return; } const low = h.text.toLowerCase(), city = Lib.CAT.filter(d => d.cat === 'World clock' && low.includes(d.title.toLowerCase())).map(d => d.id); if (city.length && !(h.intent && h.intent.cmd)) return openView('x', city); if (h.intent) return run(h.intent); const ids = Lib.match(h.text, 3); if (ids.includes('system')) { openView('system', '', 20000); return; } if (ids.length) openView('x', ids); });   // anything else: look it up in the widget library
+  // ---- subagents: faces stack up in the notch as they are spawned, and the tree drops down for a moment ----
+  const stack = $('#stack'); let stackKey = '';
+  const drawStack = () => { const act = A.activeAgents(), n = act.length || (st.running > 1 ? st.running : 0), key = act.map(a => (a.id || a.name) + a.character).join('|') + n; island.classList.toggle('agents', n > 0); if (key === stackKey) return; stackKey = key; stack.innerHTML = act.slice(0, 3).map((a, i) => `<span role="button" data-ag="${A.esc(a.id || a.name)}" title="${A.esc(a.name)} — ${A.esc(a.task || '')}">${Cards.pet(a.character, 'working', 17, 'stk' + i)}</span>`).join('') + (n ? `<b>${act.length > 3 ? '+' + (act.length - 3) : act.length ? '' : n + ' agents'}</b>` : ''); size(); };
+  on('data', drawStack); on('change', drawStack);
+  on('spawn', a => { pet.hop(0.8); flash(); if (!note && !open && !typing() && view !== 'subagents') openView('subagents', '', 7000); else if (view === 'subagents') armView(7000); });
+  on('agent-done', () => { pet.hop(0.6); if (view === 'subagents') armView(4000); });
+  on('view', v => v.id === 'none' || v.close ? closeView() : openView(v.id, v.q || v.query, v.ms));
+  const flash = () => { island.classList.remove('flash'); requestAnimationFrame(() => requestAnimationFrame(() => island.classList.add('flash'))); };
+  on('change', s => {
+    const idle = s.state === 'idle';
+    $('#chip').textContent = idle ? '' : s.label; $('#status').textContent = s.text ? s.text.replace(/^(You|Aegis):\s*/, '') : '';
+    const p = s.task.progress; $('#pct').textContent = s.busy && p != null ? p + '%' : '';
+    island.classList.toggle('live', !['idle', 'paused', 'sleeping'].includes(s.state)); $('#voice').title = s.listening ? 'Listening — click to stop' : ''; $('#talk').lastChild.textContent = s.listening ? 'Stop' : 'Talk'; size();
+  });
+  on('state', s => { if (['done', 'error', 'notification'].includes(s.state)) flash(); if (['working', 'thinking', 'searching'].includes(s.state) && !note && !open && !view && !typing()) openView((A.W.agents || []).some(a => !['idle', 'done'].includes(a.state)) ? 'subagents' : 'live', '', 16000); });
+  const meta = () => { const d = A.WX.data, m = A.W.media; $('#meta').innerHTML = focus.end ? `<b style="color:var(--violet)">◔ ${mmss(fLeft())}</b>` : (m && m.playing ? '<span class="bars" style="display:inline-flex;height:11px"><i></i><i></i><i></i></span> ' : d ? A.wxIcon(d.kind, d.night, 15) + A.deg(d.temp) + ' · ' : '') + A.hm(new Date()); };
+  on('weather', meta); on('tick', meta); on('data', meta);
+
+  const typing = () => document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+
+  // ---- use-case routing: /call <widget> resolves a real widget, never a static board ----
+  const CALL = { weather: 'weather', forecast: 'weather', temperature: 'weather', tasks: 'tasks', todo: 'tasks', 'to-do': 'tasks', focus: 'focus', timer: 'timer', timers: 'timer', meeting: 'meeting', meetings: 'schedule', calendar: 'schedule', schedule: 'schedule', events: 'schedule', agenda: 'schedule', files: 'files', 'file-tray': 'files', notes: 'notepad', notepad: 'notepad', tool: 'harness', tools: 'harness', harness: 'harness', task: 'agentrun', job: 'agentrun', notifications: 'notes', activity: 'notes', system: 'system', cpu: 'system', gpu: 'system', ram: 'system', agents: 'agents', subagents: 'agents', ask: 'ask', live: 'live', media: 'media', music: 'media', nowplaying: 'media', market: 'market', stocks: 'market', bitcoin: 'market', devices: 'devices', bluetooth: 'devices', health: 'health', security: 'security', model: 'model', clipboard: 'clipboard', coding: 'coding', navigation: 'navigation', tracking: 'tracking', payment: 'payment', spending: 'payment', call: 'call', research: 'research' };
+  function callWidget(raw, q) {
+    const key = String(raw || '').trim().toLowerCase().replace(/^\/call\s+/, '').replace(/[^a-z0-9-]+/g, ' ').trim().split(' ')[0];
+    const target = CALL[key] || (Cards.DEF[key] ? key : null);
+    if (!target) {
+      // Any of the 300+ library widgets can be called by name; it opens as a tile.
+      const ids = Lib.match(raw, 1);
+      if (ids.length) { openView('x', ids); return true; }
+      A.notify({ kind: 'info', title: 'Unknown widget', body: 'Try /call weather, /call meeting, /call tasks, /call timer, /call system, /call agents or a library name like /call bitcoin.' });
+      return false;
+    }
+    if (target === 'tasks' || target === 'focus' || target === 'files' || target === 'schedule') { openWs('work'); if (target === 'schedule') openView('schedule', '', 20000); else requestAnimationFrame(() => { const sel = target === 'tasks' ? '#tnew' : target === 'focus' ? '#fgo' : '#file-list'; document.querySelector(sel)?.scrollIntoView({ block: 'nearest' }); }); return true; }
+    if (target === 'agents') { openWs('agents'); return true; }
+    openView(target, q || '', 20000); return true;
+  }
+  const submitCall = () => {
+    const input = $('#callin'); if (!input) return;
+    const text = input.value.trim(); if (!text) return;
+    input.value = '';
+    const callMatch = text.match(/^\/call\s+(.+)$/i);
+    if (callMatch) { callWidget(callMatch[1]); return; }
+    if (/^\/ask\b/i.test(text)) { const q = text.replace(/^\/ask\s*/i, '').trim(); if (q) { A.update({ text: 'You: ' + q, keepState: true }); openView('ask'); A.act('ask', 'send', q); } return; }
+    if (/^\/widgets?\b/i.test(text)) { openWs('live'); return; }
+    A.update({ text: 'You: ' + text, keepState: true }); A.act('ask', 'send', text); openView('ask');
+  };
+  $('#callgo')?.addEventListener('click', e => { e.stopPropagation(); submitCall(); });
+  $('#callin')?.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); submitCall(); } else if (e.key === 'Escape') e.target.blur(); });
+  // The notch is meeting-aware: a real meeting exposes Join, otherwise All meetings / Schedule.
+  const drawMeetingBar = () => {
+    const el = $('#mbar'); if (!el) return;
+    const m = A.W.meeting, sc = A.W.schedule, items = (sc && sc.items) || [];
+    if (!m && !items.length) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    const start = m && /^\d{4}-\d\d-\d\dT/.test(m.start || '') ? A.hm(new Date(m.start)) : ((m && m.start) || '');
+    el.innerHTML = m
+      ? `<b>${esc(m.title || 'Meeting')}</b><span>${esc(start)}${m.people ? ' · ' + esc(m.people) : ''}</span><span class="sp"></span><button data-mjoin="1">Join</button><button class="alt" data-mall="1">All meetings</button>`
+      : `<b>No meeting now</b><span>${items.length} event${items.length === 1 ? '' : 's'} today</span><span class="sp"></span><button class="alt" data-mall="1">All meetings</button><button data-msched="1">Schedule</button>`;
+  };
+  $('#mbar')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (e.target.closest('[data-mjoin]')) A.act('meeting', 'join');
+    else if (e.target.closest('[data-mall]')) openView('schedule', '', 20000);
+    else if (e.target.closest('[data-msched]')) { A.act('schedule', 'open'); api?.show?.(); }
+  });
+  const deck2Hint = () => {
+    const shown = [...deck2.querySelectorAll('.w')].filter(s => s.style.display !== 'none').length;
+    let hint = deck2.querySelector('.deck-empty');
+    if (shown) { hint?.remove(); return; }
+    if (!hint) { hint = document.createElement('div'); hint.className = 'deck-empty'; deck2.appendChild(hint); }
+    hint.innerHTML = tab === 'live'
+      ? '<b>Nothing live right now</b>Widgets appear here by themselves when there is real data — weather, media, market, system, tracking.'
+      : '<b>No agents running</b>Subagents, research and model activity appear here when work starts.';
+  };
+  deck2.addEventListener('cards', deck2Hint);
+
+  // One pointer authority: the renderer hit-tests the real island rect. A small
+  // hysteresis gap means an edge wobble cannot flip hover on and off.
+  const islandRect = () => island.getBoundingClientRect();
+  const hitTest = (x, y) => {
+    if (typing()) return true;
+    const r = islandRect();
+    const pad = hover ? 14 : 6;
+    const left = r.left - pad, right = r.right + pad, bottom = r.bottom + pad;
+    return x >= left && x <= right && y >= 0 && y <= bottom;
+  };
+
+  // Only cross the Electron boundary when the mode actually changes. The native
+  // window is always interactive (sized to the island), so there is no
+  // click-through to manage — we just report hit state for diagnostics.
+  let routingInteractive = false;
+  const updateRouting = interactive => {
+    if (routingInteractive === interactive) return;
+    routingInteractive = interactive;
+    api?.action?.('notch-hit', { inside: interactive });
+  };
+
+  const clearClose = () => { clearTimeout(closeT); closeT = null; };
+
+  const setHov = h => {
+    if (h) {
+      clearClose();
+      updateRouting(true);
+      if (!hover) {
+        hover = true;
+        suppressHoverOpen = false;
+        island.classList.add('hover');
+        size();
+      }
+      // Hover opens the shelf after a short dwell, exactly like NotchNook:
+      // glance at the island and it expands. Clicking still toggles instantly.
+      if (!open && !note && !view && !suppressHoverOpen && !dwellT) {
+        dwellT = setTimeout(() => {
+          dwellT = null;
+          if (!st.listening && !open && hover) openWs();
+        }, Math.max(120, Number(notchCfg.hoverDelay) || 240));
+      }
+    } else {
+      clearTimeout(dwellT);
+      dwellT = null;
+      if ((hover || open) && !closeT) {
+        closeT = setTimeout(() => {
+          closeT = null;
+          if (typing()) return;
+          if (open) closeWs();
+          hover = false;
+          suppressHoverOpen = false;
+          island.classList.remove('hover');
+          updateRouting(false);
+          armView(4000);
+          armNote();
+          drawQuick();
+          size();
+        }, Math.max(0, Number(notchCfg.closeDelay) || 0) + (open ? 60 : 0));
+      }
+    }
+  };
+
+  // Register after setHov exists, then let the main process replay the current
+  // pointer state. This avoids losing the initial hover event during load.
+  api?.onEvent?.((name, data) => {
+    if (name === 'call-widget') callWidget(data && data.name);
+    else if (name === 'view:widgets') openWs('live');
+    else if (name === 'view:close') closeWs();
+    else if (name === 'notch:pointer-enter' || name === 'notch:pointer-leave') { /* renderer owns hover */ }
+  });
+  api?.action?.('notch-renderer-ready');
+
+  let pointerFrame = 0, pointerX = 0, pointerY = 0;
+  document.addEventListener('mousemove', e => {
+    pointerX = e.clientX; pointerY = e.clientY;
+    if (pointerFrame) return;
+    pointerFrame = requestAnimationFrame(() => {
+      pointerFrame = 0;
+      setHov(hitTest(pointerX, pointerY));
+    });
+  }, { capture: true, passive: true });
+
+  document.addEventListener('mouseleave', () => setHov(false));
+  document.addEventListener('mouseout', e => { if (!e.relatedTarget) setHov(false); });
+  addEventListener('blur', () => { if (!typing()) setHov(false); });
+
+  island.addEventListener('mouseenter', () => setHov(true));
+  island.addEventListener('mouseleave', e => {
+    if (!hitTest(e.clientX, e.clientY)) setHov(false);
+  });
+
+  // Clicking the notch toggles its expansion immediately
+  $('#compact').addEventListener('click', e => {
+    clearTimeout(dwellT);
+    dwellT = null;
+    if (e.target.closest('#voice')) { if (st.listening) A.toggleVoice(); return; }
+    if (e.target.closest('#stack')) return;
+    if (note && note.kind === 'ask') return;
+    if (view) { closeView(); return; }
+    if (open) {
+      // Clicking the shelf closes it. It must not stay pinned after the
+      // pointer leaves: the workspace is transient and dismisses on exit.
+      suppressHoverOpen = true;
+      closeWs();
+    } else {
+      suppressHoverOpen = false;
+      openWs();
+    }
+  });
+  // subagent faces are buttons: click one to open the tree with that subagent expanded
+  stack.addEventListener('click', e => { e.stopPropagation(); clearTimeout(dwellT); const f = e.target.closest('[data-ag]'); if (note && note.kind === 'ask') return; if (view === 'subagents' && !f) return closeView(); Cards.selectAgent(f ? f.dataset.ag : null); openView('subagents', '', 20000); });
+  $('#talk').addEventListener('click', () => { closeWs(); A.toggleVoice(); });                    // click the notch → listen
+  // Electron exposes the original file paths on dropped File objects. Copy is
+  // performed by the main process into the owner's workspace, accepting all
+  // regular file types while bounding count and aggregate size there.
+  let dropDepth = 0;
+  island.addEventListener('dragenter', e => { e.preventDefault(); dropDepth++; island.classList.add('drop-target'); });
+  island.addEventListener('dragover', e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; });
+  island.addEventListener('dragleave', e => { e.preventDefault(); dropDepth = Math.max(0, dropDepth - 1); if (!dropDepth) island.classList.remove('drop-target'); });
+  island.addEventListener('drop', async e => {
+    e.preventDefault(); e.stopPropagation(); dropDepth = 0; island.classList.remove('drop-target');
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length) { A.update({ text: 'No files were included in this drop.', keepState: true }); flash(); return; }
+    try {
+      const result = await api?.importDroppedFiles?.(files);
+      const count = result?.files?.length || 0;
+      const rejected = result?.rejected?.length || 0;
+      if (count) { fileTray = [...result.files, ...fileTray].slice(0, 100); saveFileTray(); }
+      A.update({ text: count ? `Added ${count} file${count === 1 ? '' : 's'} to the Aegis file tray${rejected ? ` · ${rejected} skipped` : ''}.` : (result?.error || 'No files were added.'), keepState: true });
+      if (count) { openWs('work'); }
+    } catch (error) { A.update({ text: error?.message || 'Could not add dropped files.', keepState: true }); }
+    flash();
+  });
+  quick.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.v) view === b.dataset.v ? closeView() : openView(b.dataset.v, '', 20000); else if (b.dataset.c === 'close') closeView(); else if (b.dataset.c === 'open') api?.show?.(); else if (b.dataset.c === 'widgets') openWs('widgets'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeView(); closeWs(); if (note && note.kind !== 'ask') hideNote(); } });
+  if (A.PREVIEW) addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.id = 'say'; d.innerHTML = ["What's the time?", "What's the date?", 'Play the song', "What's my flight?", 'GPU usage?', 'Which devices are connected?', 'Stock price?', "How's the weather?", 'Show my subagents', 'Bitcoin price', 'Time in Tokyo', 'Disk space', 'Add task call the bank', 'Start focus', 'Open Aegis', 'Show me the widgets'].map(t => `<button>${t}</button>`).join(''); document.body.appendChild(d); d.addEventListener('click', e => { if (e.target.tagName === 'BUTTON') { A.update({ text: 'You: ' + e.target.textContent, keepState: true }); A.hear(e.target.textContent); } }); });
+  // ---- Notch settings panel: live, persisted through the desktop shell ----
+  const NS_RANGES = [
+    ['ns-offset', 'offsetX', v => String(Math.round(v))],
+    ['ns-cw', 'compactWidth', v => Math.round(v) + 'px'],
+    ['ns-ew', 'expandedWidth', v => Math.round(v) + 'px'],
+    ['ns-eh', 'expandedHeight', v => Math.round(v) + 'px'],
+    ['ns-scale', 'scale', v => Math.round(v * 100) + '%'],
+    ['ns-radius', 'radius', v => Math.round(v) + 'px'],
+    ['ns-gap', 'topGap', v => Math.round(v) + 'px'],
+    ['ns-border', 'border', v => Math.round(v * 100) + '%'],
+    ['ns-shadow', 'shadow', v => Math.round(v * 100) + '%'],
+    ['ns-hover', 'hoverDelay', v => Math.round(v) + 'ms'],
+    ['ns-close', 'closeDelay', v => Math.round(v) + 'ms'],
+  ];
+  function syncNotchForm() {
+    const placement = document.getElementById('ns-place');
+    if (placement) placement.value = notchCfg.placement;
+    const blurToggle = document.getElementById('ns-blur');
+    if (blurToggle) {
+      blurToggle.checked = notchCfg.blur === true;
+      const output = blurToggle.parentElement?.querySelector('output');
+      if (output) output.textContent = notchCfg.blur ? 'On' : 'Off';
+    }
+    for (const [id, key] of NS_RANGES) {
+      const input = document.getElementById(id);
+      if (!input) continue;
+      input.value = String(notchCfg[key]);
+      const output = input.parentElement?.querySelector('output');
+      if (output) output.textContent = NS_RANGES.find(r => r[0] === id)[2](notchCfg[key]);
+    }
+  }
+  let saveTimer = null;
+  const persistNotchCfg = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { api?.setNotchSettings?.(notchCfg)?.catch?.(() => {}); }, 150);
+  };
+  function initNotchSettings() {
+    for (const [id, key, format] of NS_RANGES) {
+      const input = document.getElementById(id);
+      if (!input) continue;
+      input.addEventListener('input', () => {
+        notchCfg = { ...notchCfg, [key]: Number(input.value) };
+        const output = input.parentElement?.querySelector('output');
+        if (output) output.textContent = format(Number(input.value));
+        applyNotchCfg(notchCfg);
+        persistNotchCfg();
+      });
+    }
+    const placement = document.getElementById('ns-place');
+    placement?.addEventListener('change', () => {
+      notchCfg = { ...notchCfg, placement: placement.value };
+      applyNotchCfg(notchCfg);
+      persistNotchCfg();
+    });
+    document.getElementById('ns-blur')?.addEventListener('change', event => {
+      notchCfg = { ...notchCfg, blur: event.target.checked };
+      applyNotchCfg(notchCfg);
+      persistNotchCfg();
+    });
+    document.getElementById('ns-reset')?.addEventListener('click', () => {
+      notchCfg = { ...NOTCH_DEFAULTS };
+      applyNotchCfg(notchCfg);
+      persistNotchCfg();
+    });
+    const panel = document.getElementById('nset');
+    const toggle = on2 => {
+      const next = on2 ?? !island.classList.contains('nset');
+      island.classList.toggle('nset', next);
+      if (next) { suppressHoverOpen = true; open = true; api?.action?.('notch-expanded', { expanded: true }); island.classList.add('open'); size(); }
+      else { suppressHoverOpen = false; open = false; api?.action?.('notch-expanded', { expanded: false }); island.classList.remove('open'); size(); }
+    };
+    settingsToggle = toggle;
+    island.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); toggle(true); });
+    document.getElementById('ns-done')?.addEventListener('click', () => toggle(false));
+    panel?.addEventListener('click', e => e.stopPropagation());
+    panel?.addEventListener('pointerdown', e => e.stopPropagation());
+    void api?.getNotchSettings?.().then(cfg => { if (cfg) applyNotchCfg(cfg); }).catch(() => {});
+    api?.onNotchSettings?.(cfg => applyNotchCfg(cfg));
+  }
+  initNotchSettings();
+  applyNotchCfg(notchCfg);
+
+  drawQuick(); A.start(); drawFocus(); meta(); size();
+})();
+    </script>
+</body>
+</html>

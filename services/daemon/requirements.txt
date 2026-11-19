@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+websockets
+mcp<2  # v2 renamed FastMCP; the v1 API is what mcp_client/mcp_server use
+pypdf  # PDF outline/text extraction for STAIR ingestion (memory.ingest_pdf); stdlib fallback exists when absent
+
+# Voice pipeline (Python 3.11 venv required)
+pipecat-ai[local,silero,whisper,rnnoise]>=1.16.0
+piper-tts>=1.8.0
+faster-whisper>=1.2.0
+kokoro-onnx>=0.4.5
+soundfile>=0.12
+httpx>=0.27

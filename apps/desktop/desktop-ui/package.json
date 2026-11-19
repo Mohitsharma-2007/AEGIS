@@ -1,0 +1,10 @@
+{
+  "name": "aegis-desktop-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Source for the Aegis desktop surfaces (notch, overlay, widgets, tray pill). Built to ../ui-kit/*.html.",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

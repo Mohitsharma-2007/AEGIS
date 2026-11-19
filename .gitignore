@@ -1,0 +1,133 @@
+# ============================================================================
+# Aegis — repository ignore rules
+#
+# Rule of thumb: source and small text assets are tracked; anything that is
+# generated, downloaded, machine-specific or secret is not.
+# ============================================================================
+
+# --- Secrets: never commit a real key -------------------------------------
+# `.env.example` is the ONLY tracked template (names only, blank values).
+# `env` (no leading dot) is a real key file on this machine and must stay out.
+.env
+.env.*
+!.env.example
+.env.local
+env
+env.*
+*.pem
+*.p12
+*.pfx
+secrets/
+browser-secret
+
+# --- Dependencies ----------------------------------------------------------
+node_modules/
+.pnp.*
+.yarn/cache/
+.yarn/install-state.gz
+
+# --- Build output ---------------------------------------------------------
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+apps/sightline/dist/
+apps/host/public/sightline/
+apps/desktop/release/
+apps/desktop/release-validation/
+apps/desktop/desktop-ui/dist/
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+.venv*/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Runtime data and databases --------------------------------------------
+.aegis-data/
+data/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm
+
+# --- Voice models (hundreds of MB of ONNX weights) -------------------------
+services/daemon/voices/
+*.onnx
+*.onnx.json
+*.bin
+*.pt
+*.ckpt
+*.safetensors
+
+# --- Audio scratch files from voice testing --------------------------------
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.webm
+
+# --- Fetched / runtime tools ----------------------------------------------
+tools-bin/
+tools-bin/opencode/
+tools-bin/*.log
+tools-bin/*.pid
+
+# --- Vendored reference repos (cloned source, not part of the build) ------
+vendor/*/.git/
+vendor/**/node_modules/
+# Cloned upstream (Apache-2.0) with its own history: built locally, never
+# committed as a broken gitlink. Run `git clone` there or set AGENT_DESKTOP_BIN.
+vendor/agent-desktop/
+
+# --- Logs and dumps --------------------------------------------------------
+*.log
+*.err
+logs/
+*.pid
+*.stackdump
+crash-*.json
+apps/desktop/.tmp/
+
+# --- Docs: only the root README ships -------------------------------------
+# The design/audit notes stay local. Keep this list explicit so a new file in
+# docs/ does not silently publish.
+docs/
+*.tex
+AUDIT_REPORT.md
+BUILD_REPORT.md
+DESKTOP_APP_AUDIT_REPORT.md
+MODIFICATIONS.md
+REPAIR-CHECKLIST.md
+PLANIT.md
+PLANIT-STATUS.md
+MILESTONE-TASKS.md
+AEGIS-MASTER-PLAN.md
+AEGIS-REMAINING-PLAN.md
+AEGIS_MODEL_ROSTER.md
+ANTIGRAVITY-CONTINUATION-HANDOFF.md
+MEMORY-RESEARCH.md
+THIRD_PARTY.md
+WINDOWS_VOICE_ACCESS.md
+anti-gravity-handoff.md
+agent-test-runs.md
+agentic-test-cases.md
+handoff/
+audit/
+
+# --- Editor / OS ----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini

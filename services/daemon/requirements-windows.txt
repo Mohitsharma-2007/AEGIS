@@ -1,0 +1,19 @@
+# Windows speech engine bindings for the Aegis Windows Voice Bridge.
+#
+# These give the bridge access to the same engine that powers Windows Voice
+# Access (Windows.Media.SpeechRecognition / Windows.Media.SpeechSynthesis).
+# They are Windows-only, so they live in their own file: the rest of the
+# daemon still installs and runs on any platform.
+#
+#   .venv311\Scripts\python.exe -m pip install -r requirements-windows.txt
+#
+# Requirements:
+#   * Windows 10 1809 or newer (Windows 11 recommended)
+#   * Python 3.11 (the bridge's venv)
+#   * A microphone; the "speech, inking & typing" privacy setting must be on
+winrt-runtime>=4.1.0
+winrt-Windows.Foundation>=4.1.0
+winrt-Windows.Globalization>=4.1.0
+winrt-Windows.Media.SpeechRecognition>=4.1.0
+winrt-Windows.Media.SpeechSynthesis>=4.1.0
+winrt-Windows.Storage.Streams>=4.1.0

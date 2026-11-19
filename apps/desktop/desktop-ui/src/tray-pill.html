@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com;" />
+    <title>Aegis tray flyout</title>
+    <style>
+/*CSS*/
+/* Tray flyout. A dot jumps out of the tray icon, opens into a pill, and opens further into a small control panel when clicked.
+   Window: 340 x 250, bottom-right of the work area. Everything grows from the corner nearest the tray. */
+.wrapt{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-end;padding:8px 12px 12px;pointer-events:none}
+:root[data-anchor=bottom-left] .wrapt{justify-content:flex-start}:root[data-anchor=top-right] .wrapt{align-items:flex-start}
+html.preview .wrapt{position:relative;width:340px;height:250px;margin:40px auto 0;outline:1px dashed rgba(255,255,255,.16)}
+.tp{position:relative;pointer-events:auto;width:18px;height:18px;border-radius:9px;background:var(--surface);border:1px solid color-mix(in srgb,var(--state) 50%,var(--line2));box-shadow:0 10px 26px var(--shadow);overflow:hidden;opacity:0;transform:translateY(64px) scale(.4);
+  transition:width .5s var(--spring),height .45s var(--spring),border-radius .35s var(--ease),transform .5s var(--spring),opacity .18s ease,border-color .4s}
+:root[data-anchor=top-right] .tp{transform:translateY(-64px) scale(.4)}
+.tp.dot{opacity:1;transform:none;background:var(--state);border-color:transparent;box-shadow:0 0 0 0 var(--state);animation:dotp .5s ease-out}
+@keyframes dotp{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--state) 80%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.tp.pill,.tp.ext{opacity:1;transform:none;border-radius:26px;height:52px}.tp.ext{border-radius:24px}
+.tp::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--state) 22%,transparent) 50%,transparent 70%);background-size:220% 100%}
+.tp.busy::before{opacity:1;animation:sweep 1.8s linear infinite}@keyframes sweep{from{background-position:120% 0}to{background-position:-120% 0}}
+.rowp{position:relative;display:flex;align-items:center;gap:9px;height:52px;padding:0 13px 0 7px;cursor:pointer;opacity:0;transition:opacity .2s ease}
+.tp.pill .rowp,.tp.ext .rowp{opacity:1;transition-delay:.16s}
+#avatar{position:relative;flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center}
+#avatar::after{content:attr(data-n);position:absolute;top:-3px;right:-3px;min-width:15px;height:15px;border-radius:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;line-height:1;display:grid;place-items:center;padding:0 3px;pointer-events:none;opacity:0;transform:scale(.6);transition:opacity .15s ease,transform .25s var(--spring)}
+#avatar[data-n]::after{opacity:1;transform:scale(1)}
+.col2{flex:1;min-width:0;display:grid;gap:1px}.col2 b{font-size:12px;font-weight:650;display:flex;align-items:center;gap:6px;white-space:nowrap}.col2 b em{font-style:normal;color:var(--state);font-size:10.5px}
+.col2 small{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot{flex:0 0 auto;display:flex;align-items:center;gap:4px}.slot .bars{height:14px}.slot .ok{width:22px;height:22px;border-radius:50%;background:var(--green);color:#06210f;display:grid;place-items:center;font-size:12px;font-weight:800;animation:okp .5s var(--spring)}@keyframes okp{from{transform:scale(0) rotate(-40deg)}}
+.slot .stk{display:flex}.slot .stk span{width:22px;height:22px;border-radius:50%;background:var(--card2);border:1.5px solid var(--surface);display:grid;place-items:center;margin-left:-7px;animation:okp .45s var(--spring)}.slot .stk span:first-child{margin-left:0}
+.slot .chev{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--faint);transition:transform .3s var(--spring)}.slot .chev svg{width:11px;height:11px}.tp.m-menu .chev{transform:rotate(180deg)}
+.extb{padding:2px 12px 12px;opacity:0;transition:opacity .2s ease;max-height:174px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}.tp.ext .extb{opacity:1;transition-delay:.18s}
+.extb::-webkit-scrollbar{width:5px}.extb::-webkit-scrollbar-thumb{background:var(--card3);border-radius:99px}
+.extb>*{animation:none}.tp.ext .extb>*{animation:rise .4s var(--spring) both}.tp.ext .extb>*:nth-child(2){animation-delay:.05s}.tp.ext .extb>*:nth-child(3){animation-delay:.1s}@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.talk{width:100%;height:36px;border:0;border-radius:13px;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:filter .15s,transform .15s}.talk:hover{filter:brightness(1.1)}.talk:active{transform:scale(.98)}.talk svg{width:14px;height:14px}
+:root[data-state=listening] .talk{background:var(--red)}
+.grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.grid4 button{height:44px;border:0;border-radius:13px;background:var(--card2);color:var(--dim);font:inherit;font-size:10px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:background .15s,color .15s,transform .2s var(--spring)}
+.grid4 button:hover{background:var(--card3);color:var(--text);transform:translateY(-2px)}.grid4 svg{width:15px;height:15px}
+.grid4 button[data-a="quit"]{grid-column:1/-1}
+.subs{margin-top:8px;display:grid;gap:5px}.subs:empty{display:none}.subs div{display:flex;align-items:center;gap:7px;font-size:10.5px}.subs span.n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subs i{flex:0 0 54px;height:3px;border-radius:2px;background:var(--card3);overflow:hidden}.subs i u{display:block;height:100%;background:var(--blue);border-radius:2px;transition:width .4s}
+.nt{font-size:11.5px;line-height:1.35;color:var(--dim)}.nt b{display:block;color:var(--text);font-size:12.5px;margin-bottom:2px}.nbtn{display:flex;gap:6px;margin-top:9px}.nbtn button{flex:1;height:32px;border:0;border-radius:11px;background:var(--card2);color:var(--text);font:inherit;font-size:11.5px;font-weight:650;cursor:pointer}.nbtn button:first-child{background:var(--accent);color:#fff}
+.tail{position:absolute;right:34px;bottom:2px;display:flex;flex-direction:column;gap:2px;align-items:center;opacity:0;transition:opacity .3s .1s}
+:root[data-anchor=bottom-left] .tail{right:auto;left:34px}:root[data-anchor=top-right] .tail{display:none}
+.wrapt.on .tail{opacity:1}.tail i{width:4px;height:4px;border-radius:50%;background:var(--state);animation:tl 1s ease-in-out infinite}.tail i:last-child{width:3px;height:3px;animation-delay:.2s}@keyframes tl{50%{opacity:.25}}
+    </style>
+  </head>
+  <body>
+    <div class="wrapt" id="wrapt">
+      <div class="tp" id="pill">
+        <div class="rowp" id="rowp" title="Click for controls">
+          <span id="avatar"></span>
+          <div class="col2"><b>Aegis <span class="dot"></span><em id="chip">Ready</em></b><small id="status">Ready — say “Hey Aegis”</small></div>
+          <div class="slot" id="slot"></div>
+        </div>
+        <div class="extb" id="extb"></div>
+      </div>
+      <div class="tail"><i></i><i></i></div>
+    </div>
+    <script>
+/*ENGINE*/
+    </script>
+    <script>
+/*CORE*/
+/*CARDS*/
+(() => {
+  const { $, st, on, api, esc } = A, pill = $('#pill'), extb = $('#extb'), wrap = $('#wrapt');
+  const anchor = new URLSearchParams(location.search).get('anchor'); if (anchor) document.documentElement.dataset.anchor = anchor;
+  const pet = A.mascot($('#avatar'), 36, { shadow: false, lively: true });
+  let stage = 'hidden', mode = null, note = null, over = false, hideT = null, seqT = null, justDone = 0, loginEnabled = false;
+  // one function owns the geometry so the spring always animates real pixels
+  const layout = () => { pill.className = 'tp' + (stage === 'dot' ? ' dot' : stage === 'pill' ? (mode ? ' ext m-' + mode : ' pill') : '') + (st.busy ? ' busy' : ''); if (stage === 'hidden' || stage === 'dot') { pill.style.width = pill.style.height = ''; return; }
+    const txt = ($('#status').textContent || '').length; pill.style.width = (mode ? 316 : Math.max(214, Math.min(316, 150 + txt * 5.4 + $('#slot').offsetWidth))) + 'px'; pill.style.height = (mode ? Math.min(52 + extb.offsetHeight, 230) : 52) + 'px'; };
+  const show = ms => { clearTimeout(hideT); if (stage === 'hidden') { api?.action?.('tray-pill', { visible: true }); stage = 'dot'; wrap.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(layout)); clearTimeout(seqT); seqT = setTimeout(() => { stage = 'pill'; layout(); pet.hop(0.8); }, 260); } else if (stage === 'dot') { /* opening */ } else layout(); arm(ms); };
+  const arm = ms => { clearTimeout(hideT); if (over || (note && note.kind === 'ask')) return; hideT = setTimeout(hide, ms || 4500); };
+  const hide = () => { if (over || stage === 'hidden') return; mode = null; note = null; stage = 'dot'; layout(); clearTimeout(seqT); seqT = setTimeout(() => { stage = 'hidden'; layout(); wrap.classList.remove('on'); setTimeout(() => { if (stage === 'hidden') api?.action?.('tray-pill', { visible: false }); }, 420); }, 240); };
+  // right-hand slot: whatever matters most right now
+  const slot = () => { const act = A.activeAgents(), p = st.task.progress; let h = '';
+    if (Date.now() - justDone < 2600) h = '<span class="ok">✓</span>';
+    else if (act.length) h = `<span class="stk">${act.slice(0, 3).map((a, i) => `<span title="${esc(a.name)}">${Cards.pet(a.character, 'working', 17, 'ts' + i)}</span>`).join('')}</span>${act.length > 3 ? `<b style="font-size:10px;color:var(--blue)">+${act.length - 3}</b>` : ''}`;
+    else if (st.state === 'speaking' || st.state === 'listening') h = '<span class="bars"><i></i><i></i><i></i><i></i><i></i></span>';
+    else if (st.busy && p != null) h = `<svg width="24" height="24" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="var(--card3)" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="var(--state)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(p * 0.9425).toFixed(1)} 94.25" transform="rotate(-90 18 18)"/></svg>`;
+    h += `<span class="chev">${A.icon('up')}</span>`; if ($('#slot').dataset.h !== h) { $('#slot').dataset.h = h; $('#slot').innerHTML = h; } };
+  const menuHtml = () => `<button class="talk" data-a="talk">${A.icon('mic')}${st.listening ? 'Stop listening' : 'Talk to Aegis'}</button><div class="grid4"><button data-a="open">${A.icon('open')}Open Aegis</button><button data-a="notch">${A.icon('notch')}Display notch</button><button data-a="login">${loginEnabled ? 'Disable start at login' : 'Start Aegis at login'}</button><button data-a="logs">Open log folder</button><button data-a="quit">Quit Aegis</button></div>`;
+  const noteHtml = n => `<div class="nt"><b>${esc(n.title)}</b>${esc(n.body || '')}</div>` + (n.actions && n.actions.length ? `<div class="nbtn">${n.actions.map(a => { const id = typeof a === 'string' ? a : a.id || a.label, label = typeof a === 'string' ? a : a.label || a.id; return `<button data-n="${esc(id)}">${esc(label)}</button>`; }).join('')}</div>` : '');
+  const setMode = m => { mode = m; extb.innerHTML = m === 'menu' ? menuHtml() : m === 'note' && note ? noteHtml(note) : ''; layout(); };
+  const paint = () => { $('#chip').textContent = note && mode === 'note' ? (note.kind === 'ask' ? 'Needs you' : note.kind === 'done' ? 'Done' : 'Notice') : st.label; $('#status').textContent = st.text ? st.text.replace(/^(You|Aegis):\s*/, '') : 'Ready — say “Hey Aegis”'; const nn = note && mode === 'note' ? 0 : A.notes.length, av = $('#avatar'); if (nn) av.dataset.n = nn > 9 ? '9+' : String(nn); else delete av.dataset.n; slot(); if (mode === 'menu') { const h = menuHtml(); if (extb.dataset.h !== h) { extb.dataset.h = h; extb.innerHTML = h; } } layout(); };
+  on('change', paint); on('data', paint);
+  on('state', s => { if (s.state === 'done' || s.state === 'celebrate') { justDone = Date.now(); setTimeout(paint, 2700); } if (s.state !== 'idle') show(s.busy ? 6000 : 4500); paint(); });
+  on('spawn', () => { show(6000); pet.hop(0.7); });
+  on('notify', n => { note = n; show(n.kind === 'ask' ? 0 : 7000); setTimeout(() => { setMode('note'); paint(); }, stage === 'pill' ? 0 : 300); });
+  api?.onEvent?.(ev => { const name = typeof ev === 'string' ? ev : ev?.type; if (name === 'tray:hover') show(4500); else if (name === 'tray:click') { show(9000); setTimeout(() => setMode('menu'), stage === 'pill' ? 0 : 300); } });
+  $('#rowp').addEventListener('click', () => { if (mode === 'menu') setMode(note ? 'note' : null); else setMode('menu'); });
+  extb.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.n) { A.act('notification', b.dataset.n, { id: note && note.id }); const i = A.notes.findIndex(x => note && x.id === note.id); if (i >= 0) A.notes.splice(i, 1); note = null; setMode(null); paint(); arm(1500); return; }
+    const a = b.dataset.a; if (a === 'talk') A.toggleVoice(); else if (a === 'open') api?.show?.(); else if (a === 'notch') api?.toggleNotch?.(); else if (['login','logs','quit'].includes(a)) api?.action?.('tray-command', { command: a }); if (a !== 'talk') { setMode(null); arm(900); } });
+  pill.addEventListener('mouseenter', () => { over = true; clearTimeout(hideT); api?.hover?.(true); });
+  api?.getDesktopPreferences?.().then(prefs => { loginEnabled = !!prefs?.openAtLogin; paint(); }).catch(() => {});
+  api?.onLoginSetting?.(enabled => { loginEnabled = enabled; paint(); });
+  pill.addEventListener('mouseleave', () => { over = false; api?.hover?.(false); if (mode === 'menu') setTimeout(() => { if (!over && mode === 'menu') setMode(note ? 'note' : null); }, 700); arm(1600); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { over = false; hide(); } });
+  // Animated tray icon: this page draws the character frame by frame and hands PNG frames to the shell (tray.setImage).
+  const cv = document.createElement('canvas'); cv.width = cv.height = 32; const cx = cv.getContext('2d'); let busyDraw = false, lastState = '';
+  const frame = () => { if (busyDraw || !api?.trayUpdate) return; const ch = CHARACTERS[st.character] ? st.character : 'aegi', T = performance.now() / 1000, q = samplePose(STATES[st.state] ? st.state : 'idle', T, ch); const svg = markup(attrs(q), null, resolveTheme('color', ch), { size: 32, uid: 'tray', character: ch, title: 'Aegis', shadow: false }).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '); const img = new Image(); busyDraw = true;
+    img.onload = () => { cx.clearRect(0, 0, 32, 32); const p = st.task.progress, ringed = st.state !== 'idle'; cx.drawImage(img, ringed ? 4 : 0, ringed ? 4 : 0, ringed ? 24 : 32, ringed ? 24 : 32);
+      if (ringed) { cx.lineWidth = 2.6; cx.lineCap = 'round'; cx.strokeStyle = 'rgba(255,255,255,.22)'; cx.beginPath(); cx.arc(16, 16, 14, 0, 6.2832); cx.stroke(); cx.strokeStyle = st.color; cx.beginPath(); if (st.busy && p != null) cx.arc(16, 16, 14, -1.5708, -1.5708 + 6.2832 * p / 100); else if (st.state === 'listening' || st.state === 'speaking') { cx.globalAlpha = 0.55 + 0.45 * Math.sin(T * 6); cx.arc(16, 16, 14, 0, 6.2832); } else { const a0 = T * 4 % 6.2832; cx.arc(16, 16, 14, a0, a0 + 1.9); } cx.stroke(); cx.globalAlpha = 1;
+        const n = A.activeAgents().length; if (n) { cx.fillStyle = '#5B9BF5'; cx.beginPath(); cx.arc(25, 7, 6.5, 0, 6.2832); cx.fill(); cx.fillStyle = '#fff'; cx.font = 'bold 9px Segoe UI, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(String(Math.min(9, n)), 25, 7.5); } }
+      try { api.trayUpdate({ state: st.state, tooltip: 'Aegis — ' + st.label + (A.activeAgents().length ? ' · ' + A.activeAgents().length + ' subagents' : ''), icon: cv.toDataURL('image/png'), frame: true }); } catch {} busyDraw = false; }; img.onerror = () => { busyDraw = false; }; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); };
+  setInterval(() => { if (st.state !== 'idle' || lastState !== st.state) { frame(); lastState = st.state; } }, 125);   // 8 fps while active
+  setInterval(() => { if (st.state === 'idle') frame(); }, 3000);                                                     // an occasional idle frame
+  A.start(); paint(); if (A.PREVIEW) { over = false; show(600000); setTimeout(() => setMode('menu'), 900); }
+})();
+    </script>
+  
+<script>
+/* Pointer routing for a transparent, click-through surface window: stay
+   click-through over empty space, become interactive over real controls.
+   Without this the notch/widgets buttons and the mascot were unclickable. */
+(() => {
+  let interactive = false;
+  const sample = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const isControl = !!el && el !== document.body && el !== document.documentElement;
+    if (isControl !== interactive) {
+      interactive = isControl;
+      (window.aegis && window.aegis.setClickThrough)
+        ? window.aegis.setClickThrough(!isControl)
+        : undefined;
+    }
+  };
+  document.addEventListener('mousemove', (e) => sample(e.clientX, e.clientY), true);
+  document.addEventListener('mouseleave', () => {
+    if (interactive) {
+      interactive = false;
+      if (window.aegis && window.aegis.setClickThrough) window.aegis.setClickThrough(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

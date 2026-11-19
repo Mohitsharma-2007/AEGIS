@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:"
+    />
+    <title>Aegis</title>
+    <style>
+      /* The splash is pure black or pure white, chosen by the OS theme and
+         overridable by the shell's `theme` query parameter. No tinted slate. */
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #000000;
+        --muted: #4b5563;
+        --code-bg: #f3f4f6;
+        --code-fg: #111827;
+        --detail-bg: #f9fafb;
+        --detail-border: #e5e7eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #000000;
+          --fg: #ffffff;
+          --muted: #a3a3a3;
+          --code-bg: #171717;
+          --code-fg: #f5f5f5;
+          --detail-bg: #0a0a0a;
+          --detail-border: #262626;
+        }
+      }
+      html[data-theme='light'] {
+        color-scheme: light;
+        --bg: #ffffff;
+        --fg: #000000;
+        --muted: #4b5563;
+        --code-bg: #f3f4f6;
+        --code-fg: #111827;
+        --detail-bg: #f9fafb;
+        --detail-border: #e5e7eb;
+      }
+      html[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #000000;
+        --fg: #ffffff;
+        --muted: #a3a3a3;
+        --code-bg: #171717;
+        --code-fg: #f5f5f5;
+        --detail-bg: #0a0a0a;
+        --detail-border: #262626;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+      }
+      main {
+        max-width: 520px;
+        padding: 32px;
+        text-align: center;
+      }
+      img {
+        width: 104px;
+        height: 104px;
+        margin-bottom: 18px;
+        animation: breathe 3.2s ease-in-out infinite;
+      }
+      /* The loader art is white-stroked; on a white canvas it is inverted so
+         the animation stays pure black instead of disappearing. */
+      html[data-theme='light'] img {
+        filter: invert(1);
+      }
+      @media (prefers-color-scheme: light) {
+        html:not([data-theme='dark']) img {
+          filter: invert(1);
+        }
+      }
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 8px;
+        letter-spacing: -0.3px;
+      }
+      p {
+        font-size: 13px;
+        line-height: 1.7;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+      code {
+        background: var(--code-bg);
+        border-radius: 4px;
+        padding: 1px 5px;
+        color: var(--code-fg);
+      }
+      .detail {
+        display: none;
+        text-align: left;
+        font-size: 12px;
+        background: var(--detail-bg);
+        border: 1px solid var(--detail-border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-top: 14px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="assets/aegis-loader.svg" alt="Aegis is starting" />
+      <h1 id="title">Starting Aegis…</h1>
+      <p id="message">
+        Bringing up the local daemon, browser service and host app. This can take a
+        minute on the first run.
+      </p>
+      <div class="detail" id="detail"></div>
+    </main>
+    <script>
+      // The shell sends its resolved theme; without it the CSS media query
+      // follows the OS setting.
+      const query = new URLSearchParams(location.search);
+      const theme = query.get('theme');
+      if (theme === 'light' || theme === 'dark')
+        document.documentElement.dataset.theme = theme;
+      const reason = query.get('reason');
+      const title = document.getElementById('title');
+      const message = document.getElementById('message');
+      const detail = document.getElementById('detail');
+      if (reason === 'build') {
+        title.textContent = 'The host build is missing';
+        message.textContent =
+          'The shell found the product folder but apps/host/dist is not built, so there is no UI to load.';
+        detail.style.display = 'block';
+        detail.textContent =
+          'Build it once:\n  cd apps/host\n  npm install\n  npm run build\n\nThen reopen Aegis (or use start.bat).';
+      } else if (reason === 'timeout') {
+        title.textContent = 'The local server did not answer';
+        message.textContent =
+          'Something inside the app failed to start. The shell keeps the services it launched and reports their output.';
+        detail.style.display = 'block';
+        detail.textContent =
+          'Check the log:\n  .aegis-data/logs/desktop.log\n  .aegis-data/logs/host.log\n\nThen quit Aegis from the tray and start it again.';
+      }
+    </script>
+  </body>
+</html>

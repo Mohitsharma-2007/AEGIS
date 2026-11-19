@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#000000"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#ffffff"
+    />
+    <style>
+      /* First-paint canvas: pure black or pure white from the system theme,
+         so a cold load or reload never flashes a tinted slate. The theme
+         script below overrides this for an explicit user preference. */
+      html {
+        background: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background: #000000;
+        }
+      }
+      html[data-theme='dark'] {
+        background: #000000;
+      }
+      html[data-theme='light'] {
+        background: #ffffff;
+      }
+      body {
+        margin: 0;
+      }
+    </style>
+    <meta
+      name="description"
+      content="Aegis is a self-hosted personal agent for your documents and work."
+    />
+    <title>AEGIS</title>
+    <script src="/globals.js"></script>
+    <script src="/theme.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/client/main.tsx"></script>
+  </body>
+</html>

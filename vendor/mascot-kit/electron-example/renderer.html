@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;user-select:none}
+#root{height:100%;display:flex;align-items:flex-end;justify-content:center;padding:8px;box-sizing:border-box}
+body[data-kind=pet] #root .ae-m{-webkit-app-region:drag}</style></head>
+<body><div id="root"></div>
+<script type="module">
+  import { mountWidget, AegisSounds } from '../src/index.js';          // 'aegis-mascot' when bundling
+  const q = new URLSearchParams(location.search), kind = q.get('kind') || 'pet';
+  document.body.dataset.kind = kind;
+  const ui = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const sounds = q.get('sounds') === '1' ? new AegisSounds({ pack: 'warm', volume: 0.6 }) : null;   // only one window makes sound
+  const w = mountWidget('#root', kind, { character: 'aegi', theme: 'color', ui, sounds, follow: kind === 'pet' });
+  const b = window.aegisBridge;
+  b.onEvent(name => w.emit(name)); b.onUpdate(patch => w.update(patch)); b.onSay((role, text) => w.say(role, text));
+  w.on('*', (action, data) => b.action(action, data));                  // user actions -> main process
+  if (kind !== 'panel') { w.el.addEventListener('mouseenter', () => b.hover(true)); w.el.addEventListener('mouseleave', () => b.hover(false)); b.hover(false); }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => w.setUI(e.matches ? 'dark' : 'light'));
+</script></body></html>

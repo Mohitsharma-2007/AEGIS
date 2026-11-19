@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com;" />
+    <title>Aegis overlay</title>
+    <style>
+:root{color-scheme:dark;--surface:#09090B;--card:#111114;--card2:#1C1C21;--card3:#26262C;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.15);--text:#F6F3EF;--dim:#A8A49E;--faint:#6F6C68;--accent:#E8714F;--accent2:#F08A68;--accent-soft:rgba(232,113,79,.16);--shadow:rgba(0,0,0,.5);--state:#5FD3A0;--green:#4ADE80;--blue:#5B9BF5;--violet:#A78BFA;--amber:#F5B544;--red:#F2555A;--pink:#F472B6;--cyan:#38D0E8;--spring:cubic-bezier(.34,1.4,.36,1);--ease:cubic-bezier(.22,.9,.28,1)}
+:root[data-theme=light]{color-scheme:light;--surface:#F7F4F0;--card:#FFFFFF;--card2:#F1ECE6;--card3:#E6DFD7;--line:rgba(31,34,36,.09);--line2:rgba(31,34,36,.18);--text:#1B1C1E;--dim:#625D57;--faint:#958E87;--accent:#C9583A;--accent2:#C9583A;--accent-soft:rgba(201,88,58,.12);--shadow:rgba(31,34,36,.18)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;user-select:none;-webkit-user-select:none;font-family:"Segoe UI Variable Display","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;font-size:12px}
+button{font:inherit;color:inherit}input{font:inherit}
+svg.i{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.mm{display:block;line-height:0}.mm svg{display:block;overflow:visible}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--state);box-shadow:0 0 8px var(--state);flex:0 0 auto;transition:background .3s,box-shadow .3s}
+.bars{display:flex;align-items:center;gap:2px;height:18px}.bars i{width:2.5px;height:100%;border-radius:99px;background:var(--c,var(--state));transform:scaleY(.2);opacity:.9}
+.noscroll{scrollbar-width:none}.noscroll::-webkit-scrollbar{display:none}
+/* ── widget cards ── */
+.w{position:relative;background:linear-gradient(180deg,color-mix(in srgb,var(--card2) 34%,var(--card)),var(--card));border:1px solid var(--line);border-radius:20px;padding:13px 15px;overflow:hidden;min-width:0;break-inside:avoid;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);animation:win .45s var(--spring) both;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
+.w:hover,.w:focus-within{transform:translateY(-1px);border-color:var(--line2);box-shadow:0 10px 26px var(--shadow)}
+@keyframes win{from{opacity:0;transform:translateY(8px) scale(.97)}}
+.w header{display:flex;align-items:center;gap:8px;margin-bottom:9px;min-height:22px}
+.w header>svg.i{color:var(--dim);width:24px;height:24px;padding:5px;border-radius:8px;background:var(--card2);box-sizing:border-box}
+.w header b{font-size:12.5px;font-weight:650;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w header .r{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:99px;font-size:10px;font-weight:650;color:var(--c,var(--green));background:color-mix(in srgb,var(--c,var(--green)) 16%,transparent);white-space:nowrap}
+.big{font-size:27px;font-weight:650;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}.big small{font-size:12px;font-weight:500;color:var(--dim);margin-left:3px;letter-spacing:0}
+.t{font-size:12.5px;line-height:1.4}.s{font-size:10.5px;color:var(--dim);line-height:1.35}.f{font-size:10px;color:var(--faint)}
+.el{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row{display:flex;align-items:center;gap:8px;min-width:0}.sp{margin-left:auto}.col{display:grid;gap:2px;min-width:0}.grow{flex:1;min-width:0}
+.pbar{height:5px;border-radius:99px;background:var(--card3);overflow:hidden;margin:7px 0 6px}.pbar i{display:block;height:100%;border-radius:99px;background:var(--c,var(--state));transition:width .5s var(--ease)}
+.pbar.run i{background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);background-size:60px 100%;background-repeat:no-repeat;background-color:var(--c,var(--state));animation:shine 1.3s linear infinite}
+@keyframes shine{from{background-position:-60px 0}to{background-position:320px 0}}
+.btn{height:28px;padding:0 11px;border-radius:99px;border:0;background:var(--card2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background .15s,transform .15s,filter .15s;-webkit-app-region:no-drag;white-space:nowrap}
+.btn:hover{background:var(--card3)}.btn:active{transform:scale(.95)}.btn.p{background:var(--accent);color:#fff}.btn.p:hover{filter:brightness(1.1);background:var(--accent)}.btn.ic{width:28px;padding:0}.btn.lg{height:36px;width:36px}.btn svg.i{width:13px;height:13px}
+.btn.wide{flex:1}.link{background:none;border:0;padding:0;color:var(--accent2);font-size:11px;cursor:pointer}.link:hover{text-decoration:underline}
+.steps{display:grid;gap:5px;margin:8px 0 2px}.steps div{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim)}
+.steps i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--card3);flex:0 0 auto;display:grid;place-items:center;font-style:normal;font-size:9px;color:var(--faint)}
+.steps .done{color:var(--text)}.steps .done i{background:var(--green);border-color:var(--green);color:#06210f}.steps .now{color:var(--text)}.steps .now i{border-color:var(--state);border-top-color:transparent;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tog{width:34px;height:20px;border-radius:99px;border:0;background:var(--card3);position:relative;cursor:pointer;flex:0 0 auto;transition:background .2s}.tog::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s var(--spring)}.tog.on{background:var(--green)}.tog.on::after{transform:translateX(14px)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--card2);display:grid;place-items:center;flex:0 0 auto;overflow:hidden;font-size:11px;font-weight:700}
+.av.bob svg{animation:bob 2.2s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-2px)}}
+.art{width:58px;height:58px;border-radius:14px;flex:0 0 auto;background:linear-gradient(135deg,var(--accent),#7A2E6B 70%,#2B2F77);background-size:cover;background-position:center;display:grid;place-items:center;color:#fff}
+.seek{height:4px;border-radius:99px;background:var(--card3);flex:1;overflow:hidden}.seek i{display:block;height:100%;background:var(--text);border-radius:99px}
+.vol{flex:1;height:22px;border-radius:99px;background:var(--card2);position:relative;overflow:hidden;cursor:pointer}.vol i{position:absolute;inset:0 auto 0 0;background:var(--text);opacity:.85;border-radius:99px;min-width:22px}.vol span{position:absolute;left:9px;top:4px;font-size:10px;font-weight:700;color:var(--card);mix-blend-mode:normal;z-index:1}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;font-size:10px;font-variant-numeric:tabular-nums}.cal b{color:var(--blue);font-weight:650;padding-bottom:2px}.cal span{height:19px;line-height:19px;border-radius:50%}.cal .o{color:var(--faint)}.cal .td{background:var(--blue);color:#fff;font-weight:700}
+.ev{display:flex;gap:8px;align-items:stretch;padding:6px 8px;border-radius:11px;background:var(--card2)}.ev::before{content:"";width:3px;border-radius:9px;background:var(--c,var(--blue))}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}.mini div{background:var(--card2);border-radius:11px;padding:6px 7px}.mini small{display:block;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}.mini b{font-size:12.5px;font-weight:650}
+.hb{display:flex;align-items:flex-end;gap:3px;height:46px;margin-top:6px}.hb i{flex:1;border-radius:5px;background:var(--c,var(--blue));min-height:4px;transition:height .4s var(--ease)}
+.ask{display:flex;align-items:center;gap:8px;height:38px;padding:0 6px 0 12px;border-radius:13px;background:var(--card2);border:1px solid transparent;transition:border-color .2s}.ask:focus-within{border-color:var(--accent)}
+.ask input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font-size:12.5px;user-select:text;-webkit-user-select:text}.ask input::placeholder{color:var(--faint)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips .btn{height:25px;font-size:10.5px;font-weight:500;color:var(--dim)}.chips .btn b{color:var(--accent2);font-weight:650;margin-right:2px}
+.orb{width:44px;height:44px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle at 50% 50%,transparent 46%,var(--state) 50%,transparent 64%);filter:drop-shadow(0 0 9px var(--state));transform:scale(var(--pulse,1))}
+.trk{position:relative;height:16px;margin:9px 0 7px}.trk::before{content:"";position:absolute;left:0;right:0;top:5px;height:6px;border-radius:99px;background:var(--card3)}.trk i{position:absolute;left:0;top:5px;height:6px;border-radius:99px;background:var(--c,var(--violet))}.trk em{position:absolute;top:0;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--card3);border:3px solid var(--card)}.trk em.on{background:var(--c,var(--violet))}
+.wxi{overflow:visible;flex:0 0 auto}.wxi .spin{animation:wxspin 14s linear infinite}.wxi .drop{animation:wxdrop 1.1s linear infinite}.wxi .drop:nth-of-type(2){animation-delay:.35s}.wxi .drop:nth-of-type(3){animation-delay:.7s}.wxi .bolt{animation:wxbolt 2.4s ease-in-out infinite}.wxi .drift{animation:wxdrift 5s ease-in-out infinite}
+@keyframes wxspin{to{transform:rotate(360deg)}}@keyframes wxdrop{0%{transform:translateY(-2px);opacity:0}30%{opacity:1}100%{transform:translateY(4px);opacity:0}}@keyframes wxbolt{0%,70%,100%{opacity:.35}76%,84%{opacity:1}80%{opacity:.4}}@keyframes wxdrift{0%,100%{transform:translateX(-.8px)}50%{transform:translateX(.8px)}}
+.wxin{display:flex;gap:6px;margin-top:6px}.wxin input{flex:1;min-width:0;height:28px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);color:var(--text);padding:0 9px;outline:0;font-size:11.5px;user-select:text;-webkit-user-select:text}
+/* notification card (shared by notch / overlay / tray pill) */
+.note{display:flex;gap:10px;align-items:flex-start}.note .ni{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;background:color-mix(in srgb,var(--c,var(--accent)) 18%,transparent);color:var(--c,var(--accent))}
+/* preview only (never active inside the app) */
+html.preview body{background:radial-gradient(900px 600px at 15% 0%,#3b2620,transparent 60%),radial-gradient(900px 700px at 95% 100%,#1f2340,transparent 60%),#141416;overflow:auto}
+#pv{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:5px;border-radius:14px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.14);z-index:99;max-width:96vw}
+#pv button{border:0;border-radius:9px;background:rgba(255,255,255,.1);color:#fff;font-size:10.5px;padding:4px 8px;cursor:pointer}#pv button:hover{background:#E8714F}#pv span{font-size:10px;color:#bbb;align-self:center;padding:0 4px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+@media(max-width:560px){.w{padding:11px 12px;border-radius:18px}.xgrid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:7px}}
+
+.lv{--text:#F6F3EF;--dim:#A8A49E;--faint:#8A8680;--line:rgba(255,255,255,.1);color:#F6F3EF;display:flex;align-items:center;gap:9px;padding:8px 12px 8px 8px;border-radius:22px;background:#000;border:1px solid var(--line);cursor:pointer}.w-live{background:transparent!important;border-color:transparent!important;padding:0!important;box-shadow:none!important}
+.lvi{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--c);font-size:14px}.lvi svg{width:15px;height:15px}
+.lvv{font-size:15px;font-weight:700;color:var(--c);font-variant-numeric:tabular-nums;white-space:nowrap}.lvr{gap:7px;font-size:10px;color:var(--dim);font-weight:650}.lvr .trk{margin:0}.lvr .trk i{background:var(--c)}.lv .pbar{background:rgba(255,255,255,.16)}.lv .trk::before{background:rgba(255,255,255,.16)}.lv .pbar{height:4px;margin:4px 0 1px}
+
+/* subagent tree */
+.sa-lead{display:flex;align-items:center;gap:9px}.sa-tree{position:relative;margin:6px 0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.sa-tree::before{content:"";position:absolute;left:0;top:-4px;bottom:19px;width:1.5px;background:var(--line2);border-radius:2px}
+.sa{position:relative;display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:13px;background:var(--card2);cursor:pointer;animation:sain .45s var(--spring) both}.sa::before{content:"";position:absolute;left:-18px;top:50%;width:14px;height:1.5px;background:var(--line2)}
+.sa.dn{opacity:.6}.sa .pbar{height:3px;margin:4px 0 0}@keyframes sain{from{opacity:0;transform:translateX(-10px) scale(.94)}}
+/* library tiles */
+.xgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+.x{position:relative;min-width:0;min-height:86px;padding:10px 11px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:3px;overflow:hidden;transition:transform .18s var(--ease),border-color .18s,box-shadow .18s}
+.x:hover,.x:focus-within{transform:translateY(-2px);border-color:var(--line2);box-shadow:0 8px 24px #0003}
+.x.wide{grid-column:span 2}.xh{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);font-weight:600;min-width:0}.xg{flex:0 0 auto;font-size:12px;line-height:1;width:14px;text-align:center}.xt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.xv{font-size:21px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:auto}.xv.sm{font-size:15px}.xv.xsm{font-size:12px;white-space:normal;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.xv small{font-size:10.5px;font-weight:600;color:var(--dim);margin-left:3px}.xv.dim,.dim{color:var(--faint)}
+.xsub{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xrow{display:flex;align-items:center;gap:9px;margin-top:auto}.xr{width:34px;height:34px;flex:0 0 auto}.xrow .xv{margin:0;font-size:17px}
+.xb{height:5px;border-radius:3px;background:var(--card3);overflow:hidden;margin-top:5px}.xb i{display:block;height:100%;border-radius:3px;transition:width .5s var(--ease)}.xs{width:100%;height:22px;margin-top:3px}
+.xl{display:flex;flex-direction:column;gap:3px;margin-top:3px;font-size:11px}.xl div{display:flex;gap:8px}.xl span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.xl b{font-weight:600;color:var(--dim);white-space:nowrap}
+.xtog{margin-top:auto;width:38px;height:22px;border-radius:11px;border:0;background:var(--card3);position:relative;cursor:pointer;padding:0;transition:background .2s}.xtog i{position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s var(--spring)}.xtog.on{background:var(--green)}.xtog.on i{transform:translateX(16px)}
+.xtool{margin-top:auto;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer}.xtool:active{transform:scale(.96)}
+.xx{width:16px;height:16px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:11px;line-height:1;cursor:pointer;padding:0;flex:0 0 auto}
+
+.sa.sel{background:var(--card3);box-shadow:inset 0 0 0 1px var(--line2)}.sa-d{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}.sa-d .steps{margin:5px 0 0}.sa-log{margin-top:5px;font:10.5px/1.45 ui-monospace,Consolas,monospace;color:var(--dim)}.sa-log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn.mini{height:24px;padding:0 10px;font-size:10.5px;border-radius:8px}
+
+.stage{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;pointer-events:none}
+.stage>*{pointer-events:auto}
+html.preview .stage{width:280px;height:340px;margin:30px auto 0;outline:1px dashed rgba(255,255,255,.16)}
+/* the character never changes size on hover */
+.mascot-wrap{position:relative;width:var(--sz,100px);height:var(--sz,100px);display:grid;place-items:center;cursor:grab;-webkit-app-region:no-drag;touch-action:none;flex:0 0 auto}
+.mascot-wrap:active{cursor:grabbing}
+.aura{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--state) 50%,transparent),transparent 68%);filter:blur(12px);opacity:0;transform:scale(var(--pulse,1));transition:background .5s,opacity .4s;pointer-events:none}
+:root:not([data-state=idle]) .aura{opacity:.55}
+.ring{position:absolute;inset:2%;border-radius:50%;border:2px solid var(--state);opacity:0;pointer-events:none}
+:root[data-state=listening] .ring{animation:ripple 1.6s ease-out infinite}:root[data-state=listening] .ring.b{animation-delay:.8s}
+@keyframes ripple{0%{transform:scale(.7);opacity:.7}100%{transform:scale(1.22);opacity:0}}
+.orbit{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+.orbit::after,.orbit::before{content:"";position:absolute;left:50%;top:1%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--state);box-shadow:0 0 10px var(--state)}
+.orbit::before{top:auto;bottom:1%;width:4px;height:4px;margin-left:-2px;opacity:.7}
+.busy .orbit{opacity:1;animation:orbit 1.3s linear infinite}@keyframes orbit{to{transform:rotate(360deg)}}
+.spark{position:absolute;left:50%;top:40%;width:6px;height:6px;border-radius:50%;background:var(--c);pointer-events:none;animation:spark .8s ease-out forwards}
+@keyframes spark{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
+#mascot-img{position:relative;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))}
+.pill{transition:opacity .25s ease,transform .35s var(--spring),border-color .3s}.pill.quiet{opacity:0;transform:translateY(-8px) scale(.9);pointer-events:none}
+
+/* everything informative lives BELOW the character */
+.below{display:flex;flex-direction:column;align-items:center;gap:clamp(3px,1.1vh,7px);width:min(264px,calc(100% - 8px));margin-top:clamp(-2px,.4vh,3px);max-height:calc(100% - 120px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.below::-webkit-scrollbar{display:none}
+html.preview .below{width:264px}
+.pill{max-width:100%;padding:5px 11px;border-radius:15px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 6px 16px var(--shadow);transition:border-color .3s;cursor:default}
+.pill .rowp{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:650;white-space:nowrap;justify-content:center}
+.pill .rowp b{color:var(--state)}.pill .rowp span.m{color:var(--dim);font-weight:500}
+.pill p{margin:3px 0 1px;font-size:11.5px;line-height:1.36;color:var(--text);text-align:center;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.pill p:empty{display:none}
+.pill{flex:0 0 auto}
+@media(max-height:430px){.stage{padding-top:4px}.below{gap:3px}.pill{padding:4px 9px}.pill p{-webkit-line-clamp:2}}
+.pill .pbar{margin:5px 0 2px;height:4px}.pill .bars{height:12px}.pill .bars i{width:2px}
+:root:not([data-state=speaking]):not([data-state=listening]) .pill .bars{display:none}
+.toast{width:100%;padding:9px 11px;border-radius:17px;background:var(--surface);border:1px solid var(--line2);box-shadow:0 8px 20px var(--shadow);animation:tin .5s var(--spring) both;cursor:pointer}
+.toast.out{animation:tout .3s ease forwards}@keyframes tin{from{opacity:0;transform:translateY(-10px) scale(.9)}}@keyframes tout{to{opacity:0;transform:translateY(6px) scale(.95)}}
+.toast .steps{margin:5px 0 0;gap:3px}.toast .steps div{font-size:10.5px}.toast .steps i{width:13px;height:13px;font-size:8px}
+.row3{display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;pointer-events:none}.row3>*{pointer-events:auto}
+.minis{width:70px;display:flex;flex-wrap:wrap-reverse;gap:4px;align-content:flex-start;padding-bottom:6px;min-height:34px}.minis.l{justify-content:flex-end}.minis.r{justify-content:flex-start}
+.mini{position:relative;width:32px;height:32px;display:grid;place-items:center;animation:mspawn .6s var(--spring) both;cursor:default}.mini.l{--from:38px}.mini.r{--from:-38px}
+@keyframes mspawn{0%{transform:translate(var(--from),-18px) scale(0);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+.mini svg.pr{position:absolute;inset:0;width:32px;height:32px}.mini .mm{position:relative}.mini.dn{animation:mdone .5s var(--spring) both}.mini.dn::after{content:"✓";position:absolute;right:-2px;top:-2px;width:13px;height:13px;border-radius:50%;background:var(--green);color:#06210f;font-size:9px;font-weight:800;display:grid;place-items:center}
+@keyframes mdone{50%{transform:translateY(-9px) scale(1.12)}}.mini.out{animation:mout .4s ease forwards}@keyframes mout{to{transform:translate(var(--from),-10px) scale(0);opacity:0}}
+.minis .more{font-size:10px;font-weight:700;color:var(--blue);align-self:center;padding:0 3px;text-shadow:0 1px 3px #000}
+.gshadow{position:absolute;left:22%;right:22%;bottom:3%;height:9%;border-radius:50%;background:rgba(0,0,0,.34);filter:blur(4px);pointer-events:none;animation:gs 4.2s ease-in-out infinite}@keyframes gs{50%{transform:scaleX(.9);opacity:.75}}
+.pill{position:relative;margin-top:4px}.pill::before{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;background:var(--surface);border-left:1px solid var(--line2);border-top:1px solid var(--line2);transform:rotate(45deg);border-radius:2px 0 0 0}
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <div class="mascot-wrap" id="mascot-wrap" >
+        <span class="aura" data-pulse aria-hidden="true"></span><span class="ring"></span><span class="ring b"></span>
+        <span class="gshadow" aria-hidden="true"></span><span id="mascot-img"></span>
+      </div>
+      <div class="below" id="below">
+        <div class="pill" id="bubble">
+          <div class="rowp"><span class="dot"></span><b id="state-t">Ready</b><span class="bars"><i></i><i></i><i></i><i></i><i></i></span><span class="m" id="wxm"></span></div>
+          <p id="status"></p>
+          <div id="prog"></div>
+        </div>
+        <div id="toasts" style="width:100%;display:grid;gap:5px"></div>
+      </div>
+    </div>
+    <script>
+/*! aegis-mascot — "Aegi", the Aegis mascot. Framework-free, dependency-free. MIT.
+ *  A crew of characters (Aegi + one specialist per job) sharing one face and one engine:
+ *  a body + two eyes + a mouth, driven by pure functions of time:
+ *  pose = STATES[name].pose(t). The same sampler feeds the live DOM renderer and the
+ *  static exporter that writes self-contained animated SVG files. */
+
+// ───────────────────────── maths ─────────────────────────
+const TAU = Math.PI * 2, N = 64, BASE = 90, CY = 8;
+// the brush "A" from the Aegis logo, used as a chest emblem
+const EMBLEM = 'M6 12.3C2.7 12 0.7 9.1 1.3 5.3C1.4 4.8 1.4 4.7 1.6 4C1.7 3.6 1.7 3.6 1.1 3.7C0.8 3.7 0.5 3.8 0.5 3.8C-0.7 4 -4.2 4.5 -6.2 4.7C-6.5 4.8 -6.8 4.8 -6.9 4.8C-7 4.9 -7.2 5.2 -8 6.4C-8.9 7.7 -9.2 8.2 -10.3 10.2C-11.5 12.3 -11.7 12.4 -12.2 12.3C-12.7 12.2 -13.5 11.8 -13.8 11.4C-14 11.2 -13.9 10.6 -13.7 10.1C-13.1 8.9 -12.1 7.2 -11 5.6C-10.8 5.2 -10.8 5.2 -11.1 5.2C-12.2 5.4 -16.8 5.5 -17.2 5.3C-17.5 5.2 -19.2 4 -19.4 3.9C-19.7 3.6 -19.7 3.1 -19.5 2.9C-19.2 2.6 -18.8 2.6 -16.5 2.6C-15.6 2.6 -14.5 2.6 -14.1 2.6C-12.6 2.5 -12.1 2.4 -11.7 2.4C-11.5 2.4 -11 2.4 -10.7 2.3C-9.7 2.3 -8.7 2.2 -8.6 2.1C-8.5 2.1 -8.3 1.9 -8.1 1.5C-7.5 0.7 -7 0.1 -6 -1.2C-5.5 -1.9 -4.4 -3 -3.8 -3.7C-1.3 -6.4 -0.6 -7.1 1.1 -8.6C2.5 -9.8 4.2 -11.1 5.1 -11.7C6.9 -12.8 8.8 -12.5 9.4 -11C9.7 -10.1 9.6 -9 8.9 -7.4C8.8 -7.1 8.6 -6.6 8.4 -6.1C8.2 -5.7 7.9 -5 7.8 -4.6C6.9 -2.6 6.2 -0.5 6.2 -0.4C6.2 -0.3 6.3 -0.3 6.8 -0.4C7 -0.5 7.3 -0.5 7.4 -0.5C7.8 -0.6 8.5 -0.8 8.9 -0.9C9.1 -0.9 9.3 -1 9.4 -1C9.8 -1.1 12.8 -1.9 13.5 -2.1C13.7 -2.2 13.9 -2.2 14.1 -2.3C14.3 -2.3 14.7 -2.4 14.9 -2.5C15.6 -2.7 16.4 -2.9 17.2 -3.1C17.6 -3.1 17.9 -3.1 18.6 -2.8C19.3 -2.5 19.7 -2.2 19.7 -1.7C19.7 -1.1 18.7 -0.4 17.9 -0.4C17.6 -0.4 17.4 -0.3 16.6 -0.1C15.7 0.1 14.1 0.6 13.7 0.7C13.5 0.8 13 0.9 12.6 1C12.2 1.1 11.6 1.3 11.3 1.4C9.7 1.8 8 2.2 7.3 2.4C6.9 2.5 6.4 2.6 6.2 2.6C6 2.7 5.7 2.8 5.5 2.8C5 2.9 5 2.9 4.8 3.5C4.4 4.8 4.3 5.7 4.3 6.7C4.3 8 4.6 8.6 5.4 9.1C6.3 9.7 7.9 9.7 10 9.3C10.3 9.2 11 9 11.5 8.8C12.1 8.6 12.5 8.6 12.7 8.9C12.9 9.1 13 9.4 12.8 9.7C12.7 9.9 11.6 11.3 11.4 11.5C10.7 12.1 7.9 12.5 6 12.3ZM-3.5 1.5C-3.2 1.5 -2.7 1.4 -2.5 1.4C-2.4 1.3 -2.2 1.3 -2 1.3C-1.5 1.2 -0.7 1.1 0 1C0.2 0.9 0.5 0.9 0.6 0.9C1.1 0.8 1.3 0.8 1.5 0.7C1.7 0.7 1.9 0.6 2 0.6C2.7 0.5 2.6 0.5 2.8 0.1C3 -0.5 3.8 -2.8 4 -3.2C4 -3.3 4.2 -3.6 4.3 -3.9C4.6 -4.8 5.5 -6.8 5.9 -7.9C6.4 -9.1 6.4 -9.1 5.8 -8.7C4.4 -7.7 3.1 -6.6 0.6 -4C-0.9 -2.5 -1.2 -2.2 -2.8 -0.3C-3.3 0.1 -4.2 1.4 -4.3 1.5C-4.4 1.6 -4.2 1.6 -3.5 1.5Z';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const sstep = (t, a, b) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const bump = (t, a, b) => (t <= a || t >= b ? 0 : Math.sin(Math.PI * (t - a) / (b - a)) ** 2);
+const S = (t, per, ph = 0) => Math.sin(TAU * (t / per + ph));
+const win = (t, a, b, e = 0.15) => sstep(t, a, a + e) * (1 - sstep(t, b - e, b));
+const pop = (t, a) => sstep(t, a, a + 0.18) * (1 + 0.28 * bump(t, a + 0.04, a + 0.42));
+const num = (v, d) => { const k = 10 ** d; const r = Math.round(v * k) / k; return (r === 0 ? 0 : r).toString(); };
+const f1 = v => num(v, 1), f2 = v => num(v, 2), f3 = v => num(v, 3);
+const mix = (a, b, k) => (Array.isArray(a) ? a.map((v, i) => v + (b[i] - v) * k) : a + (b - a) * k);
+
+// ───────────────────────── body shapes (radial profiles) ─────────────────────────
+function fromOutline(pts) {            // closed polygon -> N radii measured from (0, CY), starting at 12 o'clock
+  const out = [];
+  for (let k = 0; k < N; k++) {
+    const th = k * TAU / N - Math.PI / 2, dx = Math.cos(th), dy = Math.sin(th); let best = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % pts.length];
+      const ex = bx - ax, ey = by - ay, den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
+      const t = (ax * ey - (ay - CY) * ex) / den, u = (ax * dy - (ay - CY) * dx) / den;
+      if (t > 0 && u >= -1e-6 && u <= 1 + 1e-6 && t > best) best = t;
+    }
+    out.push(best);
+  }
+  return out;
+}
+const mirror = right => right.concat(right.slice(1, -1).reverse().map(([x, y]) => [-x, y]));
+const range = (n, fn) => Array.from({ length: n + 1 }, (_, i) => fn(i / n));
+function spline(pts, n = 16) {       // open Catmull-Rom through the given points (end tangents horizontal, so the mirrored outline stays smooth)
+  const P = [[-pts[1][0], pts[1][1]], ...pts, [-pts[pts.length - 2][0], pts[pts.length - 2][1]]], out = [];
+  for (let i = 1; i < P.length - 2; i++) for (let k = 0; k < n; k++) { const t = k / n, [a, b, c, d] = [P[i - 1], P[i], P[i + 1], P[i + 2]];
+    out.push([0, 1].map(j => 0.5 * (2 * b[j] + (c[j] - a[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - d[j]) * t * t + (3 * b[j] - a[j] - 3 * c[j] + d[j]) * t ** 3))); }
+  out.push(pts[pts.length - 1]); return out;
+}
+const polar = fn => Array.from({ length: N }, (_, k) => fn(k * TAU / N - Math.PI / 2));
+const sup = (a, b, n) => polar(th => 1 / ((Math.abs(Math.cos(th)) / a) ** n + (Math.abs(Math.sin(th)) / b) ** n) ** (1 / n));
+const SHAPES = {
+  // Aegi — the original soft gumdrop
+  aegi: fromOutline(mirror(spline([[0, -78], [27, -73], [48, -53], [60, -22], [68, 14], [71, 46], [64, 73], [42, 87], [0, 90]]))),
+  // Posty (mail) — a plump envelope
+  mail: sup(80, 66, 5),
+  // Chatty (social) — a speech bubble with its tail at the bottom-left
+  social: polar(th => { const d = Math.atan2(Math.sin(th - 2.42), Math.cos(th - 2.42)); return 72 + 30 * Math.exp(-((d / 0.17) ** 2)); }),
+  // Filo (files) — a folder with its tab at the top-left
+  files: fromOutline([[-74, -62], [-26, -62], [-12, -47], [74, -47], [74, 74], [-74, 74]]),
+  // Memo (memory) — a little cloud
+  memory: polar(th => 70 - 7 * clamp(0.3 - 1.5 * Math.sin(th)) * Math.cos(6 * th) + 3 * Math.sin(th)),
+  // Rig (harness) — a flat-topped hex nut
+  harness: fromOutline(Array.from({ length: 6 }, (_, i) => [82 * Math.cos(i * TAU / 6), CY + 82 * Math.sin(i * TAU / 6)])),
+  // Guard (security) — a soft badge: rounded top, straight sides, rounded-point base
+  security: fromOutline(mirror(range(170, s => { const y = -72 + 162 * s; return [y <= -34 ? 66 * (1 - ((-34 - y) / 38) ** 3.2) ** (1 / 3.2) : y <= 4 ? 66 : 66 * (1 - ((y - 4) / 86) ** 1.7), y]; }))),
+  // generic alternates
+  leaf: fromOutline(mirror(range(160, s => { const y = -78 + 168 * s; return [y <= -10 ? 66 * (1 - ((-10 - y) / 68) ** 2.6) ** (1 / 2.6) : 66 * (1 - ((y + 10) / 100) ** 1.8), y]; }))),
+  orb: polar(() => 76), squircle: sup(74, 74, 4),
+  blob: polar(th => 74 + 5 * Math.sin(3 * th + 0.6) + 3.5 * Math.sin(2 * th + 2.1)),
+  drop: fromOutline(mirror(range(160, s => { const y = -84 + 172 * s; return [y >= 18 ? Math.sqrt(Math.max(0, 70 * 70 - (y - 18) ** 2)) : 70 * (1 - ((18 - y) / 102) ** 1.9), y]; }))),
+};
+SHAPES.aegis = SHAPES.aegi;   // v1 name kept as an alias
+function bodyPath(r) {                 // closed Catmull-Rom through the N radial points, as cubic Béziers
+  const P = r.map((v, k) => { const th = k * TAU / N - Math.PI / 2; return [v * Math.cos(th), CY + v * Math.sin(th)]; });
+  let d = `M${f1(P[0][0])} ${f1(P[0][1])}`;
+  for (let i = 0; i < N; i++) {
+    const p0 = P[(i + N - 1) % N], p1 = P[i], p2 = P[(i + 1) % N], p3 = P[(i + 2) % N];
+    d += `C${f1(p1[0] + (p2[0] - p0[0]) / 6)} ${f1(p1[1] + (p2[1] - p0[1]) / 6)} ${f1(p2[0] - (p3[0] - p1[0]) / 6)} ${f1(p2[1] - (p3[1] - p1[1]) / 6)} ${f1(p2[0])} ${f1(p2[1])}`;
+  }
+  return d + 'Z';
+}
+
+// ───────────────────────── face presets ─────────────────────────
+// eye  = [x0,y0, cx,cy, x1,y1, strokeWidth, scaleX, scaleY]  (a round-capped quadratic stroke)
+const EYE = {
+  open: [-0.5, 0, 0, 0, 0.5, 0, 25, 0.82, 1.3], wide: [-0.5, 0, 0, 0, 0.5, 0, 28, 0.9, 1.38], small: [-0.5, 0, 0, 0, 0.5, 0, 15, 1, 1],
+  happy: [-10, 4, 0, -10, 10, 4, 8, 1, 1], sleep: [-10, -2, 0, 7, 10, -2, 7, 1, 1], flat: [-10, 0, 0, 0, 10, 0, 7, 1, 1],
+  gt: [-7, -9, 9, 0, -7, 9, 7, 1, 1], lt: [7, -9, -9, 0, 7, 9, 7, 1, 1],
+};
+const eye = (preset, blink = 0, ky = 1) => { const e = preset.slice(); e[8] *= ky * (1 - 0.9 * blink); return e; };
+// mouth = [x0,y0, cx,cy, x1,y1, strokeWidth]
+const MOUTH = { smile: [-9, 0, 0, 8, 9, 0, 5], flat: [-7, 2, 0, 2, 7, 2, 5], frown: [-9, 5, 0, -3, 9, 5, 5], oh: [-0.5, 3, 0, 3, 0.5, 3, 15], grin: [-12, -1, 0, 13, 12, -1, 6], hmm: [-8, 4, -1, -1, 8, 0, 5], tiny: [-0.5, 3, 0, 3, 0.5, 3, 8] };
+
+// props = [opacity, x, y, scale, rotation]
+const PROP_HOME = { rip0: [0, 8], rip1: [0, 8], ring: [0, 8], q: [60, -80], d0: [44, -84], d1: [63, -95], d2: [86, -102], lens: [40, 34], badge: [62, -64], z0: [56, -70], z1: [56, -70], sp0: [-80, -74], sp1: [86, -30], sp2: [-92, 6], arrow: [0, -90],
+  env: [64, -58], plane: [30, -50], bub0: [60, -70], bub1: [-62, -44], heart: [0, -84], doc0: [70, -20], doc1: [70, 20], bulb: [0, -98], gear: [64, -62], term: [64, -62], scan: [0, 8], lock: [62, -64], warn: [62, -66] };
+const PROPS = Object.keys(PROP_HOME), GLYPHS = ['ck', 'cx', 'pz', 'bg'];
+const hidden = n => [0, PROP_HOME[n][0], PROP_HOME[n][1], 1, 0];
+function defaults(shape) {
+  const p = { r: SHAPES[shape] || SHAPES.aegi, tx: 0, ty: 0, rot: 0, sx: 1, sy: 1, gx: 0, gy: 0, eL: EYE.open, eR: EYE.open, m: MOUTH.smile, mo: 1, bl: 0, gl: [0, 0, 0, 0], bars: [8, 8, 8, 8, 8, 8], bo: 0, tc: 1, fx: 0, fy: 0 };
+  for (const n of PROPS) p[n] = hidden(n);
+  return p;
+}
+const blinkAt = (t, times, len = 0.17) => Math.max(...times.map(a => bump(t, a, a + len)));
+const BADGE = (o, s) => [o, 62, -64, s, 0];
+
+// ───────────────────────── states ─────────────────────────
+// Every pose(t) is periodic over `dur` (seconds), so each state loops cleanly on its own.
+// `once` states play a single time in the live component, then fall through to `then`.
+const STATES = {
+  idle: { dur: 6, poster: 0, label: 'Idle', when: 'Resting, waiting for input', pose: t => {
+    const b = blinkAt(t, [0.6, 3.3, 3.62]);
+    return { ty: 2.5 * S(t, 3), sy: 1 + 0.012 * S(t, 3, 0.25), sx: 1 - 0.008 * S(t, 3, 0.25), gx: 5 * win(t, 1.2, 2.8, 0.3) - 5 * win(t, 4, 5.4, 0.3), eL: eye(EYE.open, b), eR: eye(EYE.open, b) };
+  } },
+  hello: { dur: 2.4, poster: 1.2, once: true, then: 'idle', label: 'Hello / wake', when: 'App launch, wake word heard, greeting', pose: t => {
+    const j = bump(t, 0.2, 0.8), h = win(t, 0.25, 2.1, 0.2), sq = 0.1 * bump(t, 0, 0.25) + 0.08 * bump(t, 0.72, 1) - 0.06 * j;
+    return { ty: -30 * j, sy: 1 - sq, sx: 1 + sq * 0.7, rot: 9 * S(t, 0.45) * win(t, 0.9, 2, 0.2), eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), m: mix(MOUTH.smile, MOUTH.grin, h), bl: h,
+      sp0: [win(t, 0.5, 1.9), -80, -74, 0.7 + 0.5 * bump(t, 0.5, 1.3), 90 * t], sp1: [win(t, 0.8, 2.1), 86, -30, 0.5 + 0.5 * bump(t, 0.8, 1.7), -70 * t] };
+  } },
+  listening: { dur: 2.4, poster: 0.7, label: 'Listening', when: 'Microphone open, user is speaking', pose: t => {
+    const b = blinkAt(t, [1.7]), k0 = (t / 2.4) % 1, k1 = (t / 2.4 + 0.5) % 1, ring = k => [0.6 * (1 - k) * sstep(k, 0, 0.12), 0, 8, 0.95 + 0.42 * k, 0];
+    return { rot: -4 + 1.5 * S(t, 2.4), gy: -3, ty: 1.5 * S(t, 2.4, 0.3), eL: eye(EYE.wide, b), eR: eye(EYE.wide, b), m: MOUTH.tiny, rip0: ring(k0), rip1: ring(k1) };
+  } },
+  thinking: { dur: 3, poster: 0.35, label: 'Thinking', when: 'Model is reasoning / generating a plan', pose: t => {
+    const b = blinkAt(t, [2.2]), dot = (n, i) => { const u = (((t - i * 0.22) % 1.5) + 1.5) % 1.5, l = bump(u, 0, 0.6); return [0.4 + 0.6 * l, PROP_HOME[n][0], PROP_HOME[n][1] - 7 * l, 1 + 0.2 * l, 0]; };
+    return { rot: 5 + 2 * S(t, 3), gx: 7, gy: -9 + S(t, 1.5), ty: 1.5 * S(t, 3, 0.2), eL: eye(EYE.open, b, 0.85), eR: eye(EYE.open, b, 0.85), m: MOUTH.flat, d0: dot('d0', 0), d1: dot('d1', 1), d2: dot('d2', 2) };
+  } },
+  searching: { dur: 3.2, poster: 0.8, label: 'Searching', when: 'Web / file / memory search, tool lookups', pose: t => {
+    const sw = S(t, 3.2), b = blinkAt(t, [2.5]);
+    return { gx: 9 * sw, gy: 4 + 2 * S(t, 1.6), rot: 4 * sw, tx: 3 * sw, eL: eye(EYE.open, b, 0.8), eR: eye(EYE.wide, b), m: MOUTH.tiny, lens: [1, 14 + 38 * sw, 34 + 9 * S(t, 1.6, 0.25), 1, -12 + 10 * sw] };
+  } },
+  working: { dur: 1.6, poster: 0.3, label: 'Working / loading', when: 'Long task running, tool executing, loading', pose: t => (
+    { shape: 'orb', sx: 1 + 0.02 * S(t, 0.8), sy: 1 - 0.02 * S(t, 0.8), gy: 4 + 1.5 * S(t, 0.8), eL: eye(EYE.open, 0, 0.5), eR: eye(EYE.open, 0, 0.5), m: MOUTH.flat, ring: [1, 0, 8, 1, 360 * t / 1.6] }) },
+  speaking: { dur: 1.2, poster: 0.1, label: 'Speaking', when: 'TTS audio is playing', pose: t => {
+    const a = (0.5 + 0.5 * S(t, 0.4)) * (0.65 + 0.35 * S(t, 1.2, 0.2)), b = blinkAt(t, [0.85]);
+    return { sy: 1 + 0.015 * S(t, 0.4), gy: -1, eL: eye(EYE.open, b), eR: eye(EYE.open, b), m: mix(MOUTH.smile, MOUTH.oh, a), bo: 1, bars: [0, 1, 2, 3, 4, 5].map(i => 9 + 20 * Math.abs(S(t, 0.6, [0.1, 0.32, 0.5, 0.05, 0.27, 0.45][i]))) };
+  } },
+  sending: { dur: 1.6, poster: 0.62, once: true, then: 'thinking', label: 'Sending', when: 'Prompt submitted (Enter / send button)', pose: t => {
+    const c = bump(t, 0, 0.35), l = bump(t, 0.25, 0.8), k = sstep(t, 0.3, 1), o = win(t, 0.25, 1.3, 0.2);
+    return { sy: 1 - 0.14 * c + 0.12 * l, sx: 1 + 0.1 * c - 0.07 * l, ty: -16 * l, gy: -8 * o, eL: mix(EYE.open, EYE.wide, o), eR: mix(EYE.open, EYE.wide, o), m: mix(MOUTH.smile, MOUTH.oh, l), arrow: [win(t, 0.3, 1.05, 0.12), 0, -98 - 16 * k, 1, 0] };
+  } },
+  paused: { dur: 3, poster: 0, label: 'Paused', when: 'User paused the agent / playback', pose: t => (
+    { ty: 1.5 * S(t, 3), eL: eye(EYE.open, 0, 0.38), eR: eye(EYE.open, 0, 0.38), m: MOUTH.flat, badge: BADGE(1, 1 + 0.05 * S(t, 1.5)), gl: [0, 0, 1, 0] }) },
+  cancelled: { dur: 1.8, poster: 0.7, once: true, then: 'idle', label: 'Cancelled', when: 'User cancelled / task aborted', pose: t => {
+    const sh = S(t, 0.3) * win(t, 0.1, 1.3, 0.25), c = win(t, 0.05, 1.5, 0.15), o = win(t, 0.15, 1.6, 0.15);
+    return { tx: 7 * sh, rot: -3 * sh, sy: 1 - 0.05 * c, eL: mix(EYE.open, EYE.flat, c), eR: mix(EYE.open, EYE.flat, c), m: mix(MOUTH.smile, MOUTH.frown, c), badge: BADGE(o, pop(t, 0.15)), gl: [0, 1, 0, 0] };
+  } },
+  done: { dur: 2.4, poster: 1.1, once: true, then: 'idle', label: 'Done / success', when: 'Task finished successfully', pose: t => {
+    const j = bump(t, 0.1, 0.6), h = win(t, 0.15, 2.1, 0.2), sq = 0.09 * bump(t, 0, 0.18) + 0.07 * bump(t, 0.55, 0.85) - 0.05 * j, o = win(t, 0.35, 2.15, 0.15);
+    return { ty: -22 * j, sy: 1 - sq, sx: 1 + 0.7 * sq, eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), m: mix(MOUTH.smile, MOUTH.grin, h), bl: h, badge: BADGE(o, pop(t, 0.35)), gl: [1, 0, 0, 0],
+      sp0: [win(t, 0.5, 1.8), -80, -74, 0.6 + 0.5 * bump(t, 0.5, 1.4), 80 * t], sp2: [win(t, 0.8, 2), -92, 6, 0.4 + 0.4 * bump(t, 0.8, 1.7), -60 * t] };
+  } },
+  notification: { dur: 2.2, poster: 0.5, label: 'Notification', when: 'New message, reminder, something needs attention', pose: t => {
+    const hop = bump(t, 0.05, 0.45) + 0.6 * bump(t, 0.5, 0.8), o = win(t, 0.1, 1.8, 0.3), k = clamp((t - 0.15) / 1.2), b = blinkAt(t, [1.9]);
+    return { ty: -10 * hop, rot: 5 * o, gx: 6 * o, gy: -6 * o, eL: eye(mix(EYE.open, EYE.wide, o), b), eR: eye(mix(EYE.open, EYE.wide, o), b), m: mix(MOUTH.smile, MOUTH.tiny, o),
+      badge: BADGE(1, 1 + 0.2 * bump(t, 0.1, 0.5) + 0.1 * bump(t, 0.55, 0.85)), gl: [0, 0, 0, 1], rip0: [0.7 * (1 - k) * sstep(t, 0.15, 0.25), 62, -64, 0.28 + 0.36 * k, 0] };
+  } },
+  confused: { dur: 3, poster: 0.75, label: 'Confused', when: "Didn't understand, low confidence, needs clarification", pose: t => {
+    const b = blinkAt(t, [1.9]), big = EYE.wide, sm = EYE.small;
+    return { wob: 0.3 * (0.5 + 0.5 * S(t, 3)), rot: 8 * S(t, 3), tx: 2 * S(t, 3), gx: 3 * S(t, 1.5), gy: -3, eL: eye(big, b), eR: eye(sm, b), m: MOUTH.hmm,
+      q: [1, 60 + 3 * S(t, 1.5), -80 - 4 * S(t, 3, 0.25), 1 + 0.06 * S(t, 1), 10 * S(t, 1.5)] };
+  } },
+  error: { dur: 2, poster: 0.3, label: 'Error', when: 'Something failed (network, tool, permission)', pose: t => {
+    const sh = S(t, 0.125) * win(t, 0.05, 0.65, 0.12);
+    return { tx: 6 * sh, ty: 1.5 * S(t, 2), sy: 0.97, eL: EYE.gt, eR: EYE.lt, m: MOUTH.frown, badge: BADGE(1, 1 + 0.07 * S(t, 1)), gl: [0, 1, 0, 0] };
+  } },
+  sleeping: { dur: 4, poster: 1.4, label: 'Sleeping', when: 'Idle for a long time, do-not-disturb, mic muted', pose: t => {
+    const br = S(t, 4), z = (ph, sc) => { const k = (t / 4 + ph) % 1; return [sstep(k, 0, 0.15) * (1 - sstep(k, 0.7, 1)), 52 + 20 * k, -64 - 40 * k, sc * (0.7 + 0.5 * k), -10 + 20 * k]; };
+    return { sy: 0.9 + 0.03 * br, sx: 1.04 - 0.015 * br, ty: 6, rot: -3, eL: EYE.sleep, eR: EYE.sleep, m: [-0.5, 3, 0, 3, 0.5, 3, 7 + 2 * br], z0: z(0, 1), z1: z(0.5, 0.75) };
+  } },
+  celebrate: { dur: 1.6, poster: 0.4, label: 'Celebrate', when: 'Big win, streak, onboarding complete', pose: t => {
+    const h = Math.abs(S(t, 1.6)), tw = (ph) => 0.5 + 0.5 * S(t, 0.8, ph);
+    return { ty: -18 * h, sy: 0.95 + 0.1 * h, sx: 1.04 - 0.07 * h, rot: 6 * S(t, 1.6), eL: EYE.happy, eR: EYE.happy, m: MOUTH.grin, bl: 1,
+      sp0: [0.4 + 0.6 * tw(0), -80, -74, 0.6 + 0.5 * tw(0), 45 * S(t, 1.6)], sp1: [0.4 + 0.6 * tw(0.33), 86, -30, 0.5 + 0.5 * tw(0.33), -45 * S(t, 1.6)], sp2: [0.4 + 0.6 * tw(0.66), -92, 6, 0.4 + 0.45 * tw(0.66), 30 * S(t, 0.8)] };
+  } },
+  // ───── Posty (mail) ─────
+  'mail-incoming': { for: 'mail', dur: 2.4, poster: 1.1, label: 'New mail', when: 'A new email arrived', pose: t => {
+    const k = sstep(t, 0.1, 0.6), o = win(t, 0.1, 2.25, 0.15), look = win(t, 0.2, 2.0, 0.25), b = blinkAt(t, [1.7]);
+    return { ty: -9 * bump(t, 0.55, 0.95), gx: 6 * look, gy: -6 * look, eL: eye(mix(EYE.open, EYE.wide, look), b), eR: eye(mix(EYE.open, EYE.wide, look), b), m: mix(MOUTH.smile, MOUTH.oh, bump(t, 0.5, 1.2)),
+      env: [o, 64, -104 + 46 * k - 8 * bump(t, 0.6, 0.95), 1, -14 + 14 * k + 6 * S(t, 0.6) * win(t, 0.7, 2, 0.2)] };
+  } },
+  'mail-sending': { for: 'mail', dur: 2, poster: 0.75, label: 'Sending mail', when: 'An email is being sent', pose: t => {
+    const c = bump(t, 0, 0.4), l = bump(t, 0.3, 0.9), k = sstep(t, 0.35, 1.25), o = win(t, 0.3, 1.5, 0.2);
+    return { sy: 1 - 0.1 * c + 0.07 * l, sx: 1 + 0.07 * c - 0.04 * l, ty: -8 * l, rot: 3 * o, gx: 6 * o, gy: -7 * o, eL: mix(EYE.open, EYE.wide, o), eR: mix(EYE.open, EYE.wide, o), m: mix(MOUTH.smile, MOUTH.oh, l),
+      plane: [win(t, 0.3, 1.3, 0.12), 34 + 72 * k, -52 - 56 * k, 1 - 0.3 * k, -6] };
+  } },
+  'mail-reading': { for: 'mail', dur: 3, poster: 0.6, label: 'Reading mail', when: 'Reading, summarising or sorting the inbox', pose: t => {
+    const scan = 1 - 2 * Math.abs(((t / 1.5) % 1) - 0.5) * 2, b = blinkAt(t, [2.4]);
+    return { gx: 4 + 5 * scan, gy: 6, rot: 2 * S(t, 3), eL: eye(EYE.open, b, 0.8), eR: eye(EYE.open, b, 0.8), m: MOUTH.tiny, doc0: [1, 70, 34 + 3 * S(t, 3), 1.05, 8 + 2 * S(t, 1.5)] };
+  } },
+  // ───── Chatty (WhatsApp & socials) ─────
+  'social-typing': { for: 'social', dur: 1.8, poster: 0.3, label: 'Typing a reply', when: 'Drafting a chat or social reply', pose: t => {
+    const dot = i => { const l = bump((((t - i * 0.18) % 0.9) + 0.9) % 0.9, 0, 0.45); return [1, 46 + i * 14, -73 - 5 * l, 4.2 / [5, 6.5, 8][i], 0]; };
+    return { rot: 3 * S(t, 1.8), gx: 5, gy: -5, eL: eye(EYE.open, blinkAt(t, [1.3])), eR: eye(EYE.open, blinkAt(t, [1.3])), bub0: [1, 60, -72, 1.25 + 0.04 * S(t, 0.9), 0], d0: dot(0), d1: dot(1), d2: dot(2) };
+  } },
+  'social-message': { for: 'social', dur: 2.6, poster: 1.4, label: 'New message', when: 'New WhatsApp / DM / mention', pose: t => {
+    const a = win(t, 0.2, 2.3, 0.15), c = win(t, 0.9, 2.4, 0.15);
+    return { ty: -7 * bump(t, 0.2, 0.55) - 6 * bump(t, 0.9, 1.25), gx: 6 * win(t, 0.2, 0.9, 0.2) - 6 * win(t, 0.9, 1.9, 0.2), gy: -4 * a, eL: mix(EYE.open, EYE.wide, a), eR: mix(EYE.open, EYE.wide, a), m: mix(MOUTH.smile, MOUTH.grin, c),
+      bub0: [a, 62, -68, pop(t, 0.2), 0], bub1: [c, -64, -46, pop(t, 0.9) * 0.9, 0] };
+  } },
+  'social-react': { for: 'social', dur: 2, poster: 0.9, label: 'Reacting', when: 'Liking, reacting, posting', pose: t => {
+    const h = win(t, 0.15, 1.8, 0.2), k = sstep(t, 0.3, 1.6);
+    return { ty: -12 * bump(t, 0.15, 0.6), rot: 5 * S(t, 0.5) * win(t, 0.6, 1.7, 0.2), eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), m: mix(MOUTH.smile, MOUTH.grin, h), bl: 1,
+      heart: [win(t, 0.3, 1.75, 0.15), 6 * S(t, 0.8), -80 - 24 * k, pop(t, 0.3) * (1 + 0.12 * S(t, 0.4)), 8 * S(t, 0.8)] };
+  } },
+  // ───── Filo (files) ─────
+  'files-organizing': { for: 'files', dur: 2.4, poster: 0.3, label: 'Organising files', when: 'Moving, renaming, sorting files', pose: t => {
+    const w = S(t, 2.4), b = blinkAt(t, [1.9]);
+    return { gx: 7, gy: 3 * w, rot: 2 * w, eL: eye(EYE.open, b, 0.85), eR: eye(EYE.open, b, 0.85), m: MOUTH.tiny,
+      doc0: [1, 84 + 7 * S(t, 2.4, 0.25), -4 + 30 * w, 0.95, 8 * w], doc1: [1, 84 - 7 * S(t, 2.4, 0.25), -4 - 30 * w, 0.95, -8 * w] };
+  } },
+  'files-upload': { for: 'files', dur: 1.8, poster: 0.7, label: 'Uploading / saving', when: 'Uploading, saving, exporting a file', pose: t => {
+    const c = bump(t, 0, 0.35), l = bump(t, 0.25, 0.85), k = sstep(t, 0.3, 1.1), o = win(t, 0.25, 1.4, 0.2);
+    return { sy: 1 - 0.1 * c + 0.08 * l, sx: 1 + 0.07 * c - 0.05 * l, ty: -10 * l, gy: -8 * o, eL: mix(EYE.open, EYE.wide, o), eR: mix(EYE.open, EYE.wide, o), m: mix(MOUTH.smile, MOUTH.oh, l),
+      doc0: [win(t, 0.3, 1.15, 0.12), 0, -86 - 22 * k, 0.9, 0], arrow: [win(t, 0.45, 1.2, 0.12) * 0.9, 34, -92 - 14 * k, 0.75, 0] };
+  } },
+  'files-found': { for: 'files', dur: 2.2, poster: 1, label: 'File found', when: 'The file or document was found / opened', pose: t => {
+    const h = win(t, 0.2, 1.95, 0.2);
+    return { ty: -12 * bump(t, 0.15, 0.6), gx: 6 * h, gy: -6 * h, eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), m: mix(MOUTH.smile, MOUTH.grin, h), bl: h,
+      doc0: [win(t, 0.25, 2, 0.15), 64, -68, pop(t, 0.25) * 1.1, 10 + 5 * S(t, 0.9)], sp2: [win(t, 0.6, 1.8), -84, -40, 0.5 + 0.4 * bump(t, 0.6, 1.5), 70 * t] };
+  } },
+  // ───── Memo (memory) ─────
+  'memory-saving': { for: 'memory', dur: 2.4, poster: 0.55, label: 'Remembering', when: 'Saving a fact or preference to memory', pose: t => {
+    const k = sstep(t, 0.2, 0.85), ab = bump(t, 0.8, 1.3), h = win(t, 0.85, 2.1, 0.2);
+    return { gy: -7 * win(t, 0.1, 0.85, 0.2), sy: 1 + 0.06 * ab, sx: 1 - 0.03 * ab, eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), bl: h,
+      d1: [win(t, 0.15, 0.9, 0.08), 0, -116 + 54 * k, 1 - 0.4 * k, 0], rip0: [0.5 * (1 - sstep(t, 0.85, 1.6)) * sstep(t, 0.85, 0.95), 0, -40, 0.15 + 0.4 * sstep(t, 0.85, 1.6), 0], sp0: [win(t, 1, 2), -78, -66, 0.5 + 0.4 * bump(t, 1, 1.8), 60 * t] };
+  } },
+  'memory-recalling': { for: 'memory', dur: 2.6, poster: 1.4, label: 'Recalling', when: 'Looking something up in memory, "I remember…"', pose: t => {
+    const th = win(t, 0, 0.7, 0.15), h = win(t, 0.7, 2.3, 0.2);
+    return { gx: 5 * th, gy: -8 * th, rot: 3 * th, ty: -10 * bump(t, 0.65, 1.05), eL: mix(eye(EYE.open, 0, 1 - 0.15 * th), EYE.happy, h), eR: mix(eye(EYE.open, 0, 1 - 0.15 * th), EYE.happy, h), m: mix(mix(MOUTH.smile, MOUTH.flat, th), MOUTH.grin, h),
+      bulb: [win(t, 0.65, 2.35, 0.15), 0, -100, pop(t, 0.65), 5 * S(t, 0.8)] };
+  } },
+  'memory-linking': { for: 'memory', dur: 3, poster: 0.4, label: 'Connecting memories', when: 'Building context, linking notes and past conversations', pose: t => {
+    const node = i => { const a = TAU * (t / 3 + i / 3); return [1, 98 * Math.cos(a), 8 + 98 * Math.sin(a), [1.2, 0.85, 0.6][i], 0]; }, a0 = TAU * t / 3;
+    return { gx: 6 * Math.cos(a0), gy: 4 * Math.sin(a0), eL: eye(EYE.open, blinkAt(t, [2.1])), eR: eye(EYE.open, blinkAt(t, [2.1])), rip0: [0.22, 0, 8, 1.225, 0], d0: node(0), d1: node(1), d2: node(2) };
+  } },
+  // ───── Rig (harness) ─────
+  'harness-running': { for: 'harness', dur: 1.6, poster: 0.2, label: 'Running tools', when: 'A tool call / command / pipeline step is running', pose: t => (
+    { tx: 0.8 * S(t, 0.1), gx: 5, gy: -4, eL: eye(EYE.open, 0, 0.6), eR: eye(EYE.open, 0, 0.6), m: MOUTH.flat, gear: [1, 66, -62, 1.15, 360 * t / 1.6] }) },
+  'harness-testing': { for: 'harness', dur: 2.8, poster: 2, label: 'Running checks', when: 'Tests, evals or validations are running', pose: t => {
+    const lamp = i => [0.25 + 0.75 * win(t, 0.3 + i * 0.45, 2.6, 0.12), -22 + i * 22, -100, 5.5 / [5, 6.5, 8][i], 0], ok = win(t, 1.75, 2.6, 0.12);
+    return { gy: -6 * win(t, 0.2, 1.7, 0.2), eL: mix(eye(EYE.open, 0, 0.8), EYE.happy, ok), eR: mix(eye(EYE.open, 0, 0.8), EYE.happy, ok), m: mix(MOUTH.flat, MOUTH.grin, ok), ty: -8 * bump(t, 1.7, 2.1),
+      d0: lamp(0), d1: lamp(1), d2: lamp(2), badge: [ok, 66, -56, pop(t, 1.75), 0], gl: [1, 0, 0, 0] };
+  } },
+  'harness-building': { for: 'harness', dur: 2, poster: 0.3, label: 'Building', when: 'Writing code, scaffolding, deploying', pose: t => (
+    { ty: 1.6 * Math.abs(S(t, 0.25)), gx: 6, gy: -5, rot: 2, eL: eye(EYE.open, blinkAt(t, [1.5]), 0.8), eR: eye(EYE.open, blinkAt(t, [1.5]), 0.8), m: MOUTH.tiny, term: [1, 64, -64 + 2 * S(t, 2), 1, -4 + 2 * S(t, 1)], tc: 0.5 + 0.5 * Math.sign(S(t, 0.5)) }) },
+  // ───── Guard (security) ─────
+  'security-scanning': { for: 'security', dur: 2.4, poster: 0.45, label: 'Scanning', when: 'Checking permissions, scanning a file / link / request', pose: t => {
+    const w = S(t, 2.4);
+    return { gy: 5 * w, eL: eye(EYE.open, 0, 0.75), eR: eye(EYE.open, 0, 0.75), m: MOUTH.flat, scan: [0.95, 0, 8 + 66 * w, 1, 0] };
+  } },
+  'security-locked': { for: 'security', dur: 2.2, poster: 1, label: 'Secured', when: 'Verified, encrypted, access locked', pose: t => {
+    const h = win(t, 0.35, 1.9, 0.2), k = sstep(t, 0.4, 1.3);
+    return { ty: 5 * bump(t, 0.25, 0.6), sy: 1 - 0.04 * bump(t, 0.25, 0.6), eL: mix(EYE.open, EYE.happy, h), eR: mix(EYE.open, EYE.happy, h), m: mix(MOUTH.smile, MOUTH.grin, h),
+      lock: [win(t, 0.3, 2, 0.15), 62, -64, pop(t, 0.3) * 1.1, 0], rip0: [0.5 * (1 - k) * sstep(t, 0.4, 0.5), 0, 8, 0.95 + 0.4 * k, 0] };
+  } },
+  'security-alert': { for: 'security', dur: 1.6, poster: 0.3, label: 'Security alert', when: 'Risky action, suspicious request, permission needed', pose: t => {
+    const sh = S(t, 0.2) * win(t, 0.05, 0.7, 0.12);
+    return { tx: 4 * sh, gx: 6, gy: -6, eL: EYE.wide, eR: EYE.wide, m: MOUTH.tiny, warn: [1, 62, -66, 1.1 + 0.14 * S(t, 0.8), 6 * sh], rip0: [0.35 * (0.5 + 0.5 * S(t, 0.8)), 0, 8, 1.02 + 0.06 * S(t, 0.8, 0.25), 0] };
+  } },
+};
+const STATE_NAMES = Object.keys(STATES);
+/** The 16 states every character can play. */
+const COMMON_STATES = STATE_NAMES.filter(s => !STATES[s].for);
+
+// ───────────────────────── the crew ─────────────────────────
+// palette: body / detail (tone-on-tone body details) / eye / accent (props) / onAccent / blush / bright (used on dark) / pop (one small highlight colour)
+const CHARACTERS = {
+  aegi: { name: 'Aegi', role: 'Lead assistant', mood: 'calm, breathes and glances around', job: 'Talks to you, plans, and hands work to the specialists', shape: 'aegi', morph: true, face: [0, 0],
+    palette: { body: '#BA5B45', detail: '#9E4735', eye: '#FBF8F4', accent: '#1F2224', onAccent: '#FBF8F4', blush: '#F3A791', bright: '#D9755C', pop: '#FFC857' } },
+  mail: { name: 'Posty', role: 'Mail', job: 'Reads, drafts, sends and sorts email', shape: 'mail', face: [0, 26], mood: 'eager, does a little hop',
+    life: t => ({ ty: -9 * bump(t, 2.0, 2.45) - 5 * bump(t, 2.45, 2.8), sy: 1 - 0.05 * bump(t, 1.85, 2.05) + 0.03 * bump(t, 2.0, 2.45), gy: -3 * win(t, 4, 5.3, 0.3) }),
+    palette: { body: '#3F6FE0', detail: '#2C55BE', eye: '#FBF8F4', accent: '#1B2440', onAccent: '#FBF8F4', blush: '#8FB0F7', bright: '#6C93F2', pop: '#FFC857' } },
+  social: { name: 'Chatty', role: 'WhatsApp & socials', job: 'Handles chats, DMs, mentions and posts', shape: 'social', face: [0, 0], base: { bl: 0.7 }, mood: 'bubbly, sways and smiles',
+    life: t => ({ rot: 4 * S(t, 3), ty: 2 * S(t, 1.5), m: mix(MOUTH.smile, MOUTH.grin, win(t, 3.6, 5.2, 0.3)) }),
+    palette: { body: '#22A56A', detail: '#178553', eye: '#FBF8F4', accent: '#12301F', onAccent: '#FBF8F4', blush: '#8FE0B8', bright: '#3CC987', pop: '#FF5C7A' } },
+  files: { name: 'Filo', role: 'Files', job: 'Finds, organises, uploads and converts files', shape: 'files', face: [0, 18], mood: 'tidy, steady, peeks sideways',
+    life: t => ({ ty: 1.2 * S(t, 6), sy: 1, sx: 1, gx: 7 * win(t, 1, 2.2, 0.25) - 7 * win(t, 2.4, 3.2, 0.25), rot: 1.5 * win(t, 4.2, 5.4, 0.3) }),
+    palette: { body: '#F2A72E', detail: '#D4891A', eye: '#2B2015', accent: '#2B2015', onAccent: '#FFF8EA', blush: '#E8862A', bright: '#F7BC55', pop: '#FFFFFF' } },
+  memory: { name: 'Memo', role: 'Memory', job: 'Remembers facts and preferences, recalls context', shape: 'memory', face: [0, 6], mood: 'dreamy, floats and looks up',
+    life: t => ({ ty: -5 + 6 * S(t, 6), tx: 3 * S(t, 6, 0.25), gy: -5 * win(t, 1.4, 3, 0.4), gx: 0, sp0: [0.9 * bump(t, 3.6, 5), 78, -62, 0.45 + 0.25 * bump(t, 3.6, 5), 40 * t] }),
+    palette: { body: '#7B5BE6', detail: '#6042C8', eye: '#FBF8F4', accent: '#231A45', onAccent: '#FBF8F4', blush: '#BBA9F8', bright: '#9C82F2', pop: '#FFD166' } },
+  harness: { name: 'Rig', role: 'Harness', job: 'Runs tools, commands, tests and builds', shape: 'harness', face: [0, 2], mood: 'focused, ticks like a machine',
+    life: t => ({ ty: 0, sy: 1, sx: 1, rot: 6 * sstep(t, 2, 2.2) * (1 - sstep(t, 3.6, 3.8)) - 6 * sstep(t, 4.6, 4.8) * (1 - sstep(t, 5.6, 5.8)), m: MOUTH.flat }),
+    palette: { body: '#1596A4', detail: '#0E7683', eye: '#FBF8F4', accent: '#0F2A2F', onAccent: '#FBF8F4', blush: '#84D6DF', bright: '#35B9C7', pop: '#FFB703' } },
+  security: { name: 'Guard', role: 'Security', job: 'Checks permissions, scans, locks and warns', shape: 'security', face: [0, -4], mood: 'watchful, stands firm, eyes sweep left and right',
+    life: t => ({ ty: 0.8 * S(t, 6), sy: 1, sx: 1, gx: 8 * S(t, 6), m: MOUTH.flat }),
+    palette: { body: '#33427F', detail: '#8FA2EE', eye: '#FBF8F4', accent: '#38D39F', onAccent: '#10261F', blush: '#6B7DCB', bright: '#7F93EA', pop: '#38D39F' } },
+};
+const CHARACTER_NAMES = Object.keys(CHARACTERS);
+/** States a character can play: the 16 common ones + its own signature states. */
+const statesFor = c => STATE_NAMES.filter(s => !STATES[s].for || STATES[s].for === c);
+
+/** Full pose of `state` at time `t` (seconds). Pure.  who: character id, or { character, shape } */
+function samplePose(state, t, who = 'aegi') {
+  const w = typeof who === 'string' ? (CHARACTERS[who] ? { character: who } : { shape: who }) : (who || {}), ch = CHARACTERS[w.character] || CHARACTERS.aegi;
+  const st = STATES[state] || STATES.idle, p = defaults(w.shape || ch.shape), o = st.pose(((t % st.dur) + st.dur) % st.dur);
+  if (ch.base) Object.assign(p, ch.base);
+  const tt = ((t % st.dur) + st.dur) % st.dur; if (state === 'idle' && ch.life) Object.assign(o, ch.life(tt));
+  p.fx = ch.face[0]; p.fy = ch.face[1];
+  if (o.shape && ch.morph && !w.shape) p.r = SHAPES[o.shape];
+  if (o.wob) p.r = mix(p.r, SHAPES.blob, o.wob);
+  for (const k in o) if (k !== 'shape' && k !== 'wob' && k in p) p[k] = o[k];
+  return p;
+}
+const lerpPose = (a, b, k) => { const o = {}; for (const key in b) o[key] = mix(a[key], b[key], k); return o; };
+
+// ───────────────────────── themes ─────────────────────────
+const THEMES = {
+  terracotta: { label: 'Terracotta (brand)', body: '#BA5B45', eye: '#FBF8F4', accent: '#1F2224', onAccent: '#FBF8F4', blush: '#F3A791' },
+  dark: { label: 'Dark', body: '#1F2224', eye: '#FBF8F4', accent: '#D06A51', onAccent: '#FBF8F4', blush: '#D06A51', stroke: '#4A5055', strokeWidth: 3 },
+  light: { label: 'Light', body: '#FBF8F4', eye: '#1F2224', accent: '#BA5B45', onAccent: '#FBF8F4', blush: '#F0B4A2', stroke: '#1F2224', strokeWidth: 5 },
+  snow: { label: 'Snow (mono, for dark UIs)', body: '#FFFFFF', eye: '#111315', accent: '#FFFFFF', onAccent: '#111315', blush: '#C9CED3', stroke: '#D5DADF', strokeWidth: 3 },
+  aurora: { label: 'Aurora (multi)', body: ['#7C5CFF', '#22D3EE', '#34D399'], eye: '#FFFFFF', accent: '#7C5CFF', onAccent: '#FFFFFF', blush: '#C4B5FD' },
+  sunset: { label: 'Sunset (multi)', body: ['#FFB347', '#FF5E7E', '#8B5CF6'], eye: '#FFFFFF', accent: '#FF5E7E', onAccent: '#FFFFFF', blush: '#FFD3A6' },
+  ocean: { label: 'Ocean (multi)', body: ['#38BDF8', '#2563EB', '#1E1B4B'], eye: '#FFFFFF', accent: '#38BDF8', onAccent: '#0B1220', blush: '#93C5FD' },
+  candy: { label: 'Candy (multi)', body: ['#F9A8D4', '#FDE68A', '#A7F3D0'], eye: '#3B2A4A', accent: '#EC4899', onAccent: '#FFFFFF', blush: '#FB7185' },
+  neon: { label: 'Neon (dark multi)', body: '#0D0F12', eye: ['#39FF9C', '#22D3EE'], accent: '#FF3DCB', onAccent: '#0D0F12', blush: '#FF3DCB', stroke: ['#39FF9C', '#22D3EE', '#FF3DCB'], strokeWidth: 3.5 },
+};
+const THEME_NAMES = Object.keys(THEMES);
+/** Every character comes in three variants: 'color' (its own colour), 'dark' and 'light'. Aegi's extra THEMES work on any character too. */
+const VARIANTS = ['color', 'dark', 'light'];
+function characterTheme(character = 'aegi', variant = 'color') {
+  const P = (CHARACTERS[character] || CHARACTERS.aegi).palette;
+  if (variant === 'dark') return { body: '#1F2224', eye: '#FBF8F4', accent: P.bright, onAccent: '#1F2224', blush: P.bright, stroke: P.bright, strokeWidth: 4, detail: P.bright, pop: P.pop };
+  if (variant === 'light') return { body: '#FBF8F4', eye: '#1F2224', accent: P.body, onAccent: '#FBF8F4', blush: P.blush, stroke: P.body, strokeWidth: 5, detail: P.body, pop: P.pop };
+  return { body: P.body, eye: P.eye, accent: P.accent, onAccent: P.onAccent, blush: P.blush, detail: P.detail, pop: P.pop };
+}
+/** Build a custom theme. Any colour may be a string or an array of gradient stops. */
+function createTheme(o = {}, character = 'aegi') { return { ...characterTheme(character, 'color'), label: 'Custom', ...o }; }
+function resolveTheme(t, character = 'aegi') {
+  if (t == null || t === 'terracotta' && character !== 'aegi') t = 'color';
+  if (typeof t !== 'string') return createTheme(t, character);
+  if (VARIANTS.includes(t)) return characterTheme(character, t);
+  const T = THEMES[t]; if (!T) return characterTheme(character, 'color');
+  return { detail: Array.isArray(T.eye) ? T.eye[0] : T.eye, detailOpacity: 0.35, pop: '#FFC857', ...T };
+}
+
+// ───────────────────────── pose -> attributes ─────────────────────────
+const quad = v => `M${f1(v[0])} ${f1(v[1])}Q${f1(v[2])} ${f1(v[3])} ${f1(v[4])} ${f1(v[5])}`;
+function attrs(p) {
+  const A = {}, set = (k, a, v) => { (A[k] || (A[k] = {}))[a] = v; };
+  set('bt', '@translate', `${f1(p.tx)} ${f1(p.ty)}`); set('br', '@rotate', `${f2(p.rot)} 0 ${BASE}`); set('bs', '@scale', `${f3(p.sx)} ${f3(p.sy)}`);
+  set('body', 'd', bodyPath(p.r)); set('rim', 'd', bodyPath(p.r.map(v => v - 9)));
+  set('sh', '@translate', `${f1(p.tx)} 108`); set('shs', '@scale', f3(clamp(1 + p.ty / 70, 0.45, 1.1) * p.sx));
+  set('face', '@translate', `${f1(p.gx + (p.fx || 0))} ${f1(p.gy + (p.fy || 0))}`);
+  for (const e of ['eL', 'eR']) { const v = p[e]; set(e, 'd', quad(v)); set(e, 'stroke-width', f1(v[6])); set(e + 's', '@scale', `${f3(v[7])} ${f3(v[8])}`); }
+  set('m', 'd', quad(p.m)); set('m', 'stroke-width', f1(p.m[6])); set('m', 'opacity', f2(p.mo)); set('bl', 'opacity', f2(p.bl));
+  for (const n of PROPS) { const v = p[n]; set(n, 'opacity', f2(v[0])); set(n, '@translate', `${f1(v[1])} ${f1(v[2])}`); set(n + 'r', '@rotate', f1(v[4])); set(n + 's', '@scale', f3(v[3])); }
+  GLYPHS.forEach((g, i) => set('g_' + g, 'opacity', f2(p.gl[i])));
+  set('tcur', 'opacity', f2(p.tc));
+  set('bars', 'opacity', f2(p.bo)); p.bars.forEach((h, i) => { set('b' + i, 'y', f1(CY - h / 2)); set('b' + i, 'height', f1(h)); });
+  return A;
+}
+
+// ───────────────────────── markup ─────────────────────────
+let UID = 0;
+function markup(vals, anim, theme, { live = false, size, title = 'Aegis mascot', uid = 'am' + (UID++), emblem = true, rim = false, shadow = true, character = 'aegi' } = {}) {
+  const defs = [], paint = (c, id) => {
+    if (!Array.isArray(c)) return c;
+    defs.push(`<linearGradient id="${uid}${id}" gradientUnits="userSpaceOnUse" x1="-60" y1="-80" x2="60" y2="90">${c.map((s, i) => `<stop offset="${f2(i / (c.length - 1))}" stop-color="${s}"/>`).join('')}</linearGradient>`);
+    return `url(#${uid}${id})`;
+  };
+  const T = theme, det = T.detail || (Array.isArray(T.eye) ? T.eye[0] : T.eye), dO = T.detailOpacity ?? 1, pp = T.pop || '#FFC857', flatBody = Array.isArray(T.body) ? T.body[1] : T.body, body = paint(T.body, 'b'), eyec = paint(T.eye, 'e'), stroke = T.stroke ? paint(T.stroke, 's') : null, acc = T.accent, on = T.onAccent;
+  const E = (tag, key, extra = '', inner = '') => {
+    let a = ''; const v = vals[key] || {};
+    for (const k in v) a += k[0] === '@' ? ` transform="${k.slice(1)}(${v[k]})"` : ` ${k}="${v[k]}"`;
+    const kids = inner + ((anim && anim[key]) || '');
+    return `<${tag}${live ? ` data-k="${key}"` : ''}${a}${extra ? ' ' + extra : ''}${kids ? `>${kids}</${tag}>` : '/>'}`;
+  };
+  const prop = (n, content) => E('g', n, '', E('g', n + 'r', '', E('g', n + 's', '', content)));
+  const line = `fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+  const eyeEl = (k, x) => `<g transform="translate(${x} -17)">${E('g', k + 's', '', E('path', k, `${line} stroke="${eyec}"`))}</g>`;
+  const star = 'M0 -15Q2 -2 15 0Q2 2 0 15Q-2 2 -15 0Q-2 -2 0 -15Z';
+  const lj = `stroke-linecap="round" stroke-linejoin="round"`;
+  const FEATURE = {
+    aegi: `<path transform="translate(0 48)" d="${EMBLEM}" fill="${Array.isArray(T.eye) ? T.eye[0] : T.eye}" fill-opacity="${T.emblemOpacity ?? 0.5}" fill-rule="evenodd"/>`,
+    mail: `<path d="M-71 -47L0 -13L71 -47" fill="none" stroke="${det}" stroke-opacity="${dO}" stroke-width="7" ${lj}/><circle cy="-13" r="7.5" fill="${pp}"/>`,
+    social: `<g transform="translate(52 -50)"><circle r="15" fill="${pp}" stroke="${flatBody}" stroke-width="4"/><path d="M-3 -4L1 -7V7" fill="none" stroke="#fff" stroke-width="4" ${lj}/></g>`,
+    files: `<path d="M-72 -26H72" fill="none" stroke="${det}" stroke-opacity="${dO}" stroke-width="6" ${lj}/><rect x="-22" y="50" width="44" height="11" rx="5.5" fill="${det}" fill-opacity="${dO}"/>`,
+    memory: `<path transform="translate(0 52) scale(.62)" d="M0 -15Q2 -2 15 0Q2 2 0 15Q-2 2 -15 0Q-2 -2 0 -15Z" fill="${pp}"/><circle cx="-22" cy="50" r="3.5" fill="${pp}" opacity=".8"/><circle cx="22" cy="50" r="3.5" fill="${pp}" opacity=".8"/><path d="M-18 50H-10M10 50H18" stroke="${pp}" stroke-width="2.5" opacity=".7" ${lj}/>`,
+    harness: [0, 1, 2, 3, 4, 5].map(i => `<circle cx="${f1(63 * Math.cos(i * TAU / 6))}" cy="${f1(CY + 63 * Math.sin(i * TAU / 6))}" r="5" fill="${det}" fill-opacity="${dO}"/>`).join('') + `<path d="M-13 49L-5 55L-13 61M1 61H14" fill="none" stroke="${pp}" stroke-width="5" ${lj}/>`,
+    security: E('path', 'rim', `fill="none" stroke="${det}" stroke-opacity="${0.55 * dO}" stroke-width="4" stroke-linejoin="round"`) + `<circle cy="44" r="8" fill="${pp}"/><path d="M-4.5 48L-7 63H7L4.5 48Z" fill="${pp}" stroke="${pp}" stroke-width="2" stroke-linejoin="round"/>`,
+  };
+  const paper = (extra = '') => `<path d="M-13 -17H5L13 -9V17H-13Z" fill="${on}" stroke="${acc}" stroke-width="4" ${lj}/><path d="M5 -17V-9H13" fill="none" stroke="${acc}" stroke-width="4" ${lj}/><path d="M-7 -2H7M-7 5H7M-7 12H2" fill="none" stroke="${acc}" stroke-width="3" stroke-opacity=".6" ${lj}/>${extra}`;
+  const svg =
+    (shadow ? E('g', 'sh', '', E('g', 'shs', '', `<ellipse rx="46" ry="6.5" fill="#000" opacity=".11"/>`)) : '') +
+    prop('rip0', `<circle r="80" fill="none" stroke="${acc}" stroke-width="4"/>`) + prop('rip1', `<circle r="80" fill="none" stroke="${acc}" stroke-width="4"/>`) +
+    prop('ring', `<path d="M0 -106A106 106 0 0 1 91.8 -53M0 106A106 106 0 0 1 -91.8 53" ${line} stroke="${acc}" stroke-width="7"/>`) +
+    E('g', 'bars', `fill="${acc}"`, [-116, -104, -92, 92, 104, 116].map((x, i) => E('rect', 'b' + i, `x="${x - 3.5}" width="7" rx="3.5"`)).join('')) +
+    E('g', 'bt', '', E('g', 'br', '', `<g transform="translate(0 ${BASE})">${E('g', 'bs', '', `<g transform="translate(0 -${BASE})">` +
+      (emblem && character === 'files' ? `<g transform="rotate(5 30 -40)"><rect x="-4" y="-76" width="62" height="60" rx="7" fill="${pp}" stroke="${det}" stroke-width="3"/><path d="M8 -64H44" ${line} stroke="${det}" stroke-width="4" stroke-opacity=".55"/></g>` : '') +
+      E('path', 'body', `fill="${body}"${stroke ? ` stroke="${stroke}" stroke-width="${T.strokeWidth || 3}" stroke-linejoin="round"` : ''}`) +
+      (rim ? E('path', 'rim', `fill="none" stroke="${Array.isArray(T.eye) ? T.eye[0] : T.eye}" stroke-opacity="${T.rimOpacity ?? 0.2}" stroke-width="3" stroke-linejoin="round"`) : '') +
+      (emblem ? FEATURE[character] || FEATURE.aegi : '') +
+      E('g', 'face', '', E('g', 'bl', `fill="${T.blush}"`, `<circle cx="-44" cy="5" r="9"/><circle cx="44" cy="5" r="9"/>`) + eyeEl('eL', -24) + eyeEl('eR', 24) +
+        `<g transform="translate(0 11)">${E('path', 'm', `${line} stroke="${eyec}"`)}</g>`) + '</g>')}</g>`)) +
+    prop('q', `<path d="M-10 -12C-10 -26 10 -26 10 -12C10 -3 0 -4 0 6" ${line} stroke="${acc}" stroke-width="7.5"/><circle cy="19" r="5" fill="${acc}"/>`) +
+    prop('lens', `<circle r="18" fill="${on}" fill-opacity=".28" stroke="${acc}" stroke-width="7"/><path d="M14 14L29 29" ${line} stroke="${acc}" stroke-width="9"/>`) +
+    prop('badge', `<circle r="21" fill="${acc}"/>` +
+      E('path', 'g_ck', `d="M-9 0L-3 7L10 -7" ${line} stroke="${on}" stroke-width="6"`) + E('path', 'g_cx', `d="M-7 -7L7 7M7 -7L-7 7" ${line} stroke="${on}" stroke-width="6"`) +
+      E('path', 'g_pz', `d="M-6 -8V8M6 -8V8" ${line} stroke="${on}" stroke-width="6.5"`) + E('g', 'g_bg', '', `<path d="M0 -10V2" ${line} stroke="${on}" stroke-width="6.5"/><circle cy="10.5" r="3.6" fill="${on}"/>`)) +
+    ['z0', 'z1'].map(n => prop(n, `<path d="M-7 -7H7L-7 7H7" ${line} stroke="${acc}" stroke-width="5"/>`)).join('') +
+    ['sp0', 'sp1', 'sp2'].map(n => prop(n, `<path d="${star}" fill="${acc}"/>`)).join('') +
+    prop('env', `<rect x="-20" y="-14" width="40" height="28" rx="5" fill="${on}" stroke="${acc}" stroke-width="4.5"/><path d="M-18 -11L0 3L18 -11" fill="none" stroke="${acc}" stroke-width="4.5" ${lj}/><circle cx="20" cy="-14" r="7.5" fill="${pp}" stroke="${acc}" stroke-width="2.5"/>`) +
+    prop('plane', `<path d="M-20 4L21 -15L8 19L-1 6Z" fill="${on}" stroke="${acc}" stroke-width="4.5" ${lj}/><path d="M-1 6L21 -15" fill="none" stroke="${acc}" stroke-width="4" ${lj}/>`) +
+    prop('bub0', `<path d="M-22 -15H22Q30 -15 30 -7V7Q30 15 22 15H-8L-20 25V15H-22Q-30 15 -30 7V-7Q-30 -15 -22 -15Z" fill="${on}" stroke="${acc}" stroke-width="4.5" ${lj}/>`) +
+    prop('bub1', `<path d="M-22 -15H22Q30 -15 30 -7V7Q30 15 22 15H20V25L8 15H-22Q-30 15 -30 7V-7Q-30 -15 -22 -15Z" fill="${pp}" stroke="${acc}" stroke-width="4.5" ${lj}/><path d="M-15 -4H15M-15 5H5" fill="none" stroke="#fff" stroke-width="4" ${lj}/>`) +
+    prop('heart', `<path d="M0 15C-24 0 -19 -17 -9 -17C-4 -17 0 -13 0 -9C0 -13 4 -17 9 -17C19 -17 24 0 0 15Z" fill="${pp}" stroke="${acc}" stroke-width="4" ${lj}/>`) +
+    prop('doc0', paper()) + prop('doc1', paper()) +
+    prop('bulb', `<path d="M0 -40V-33M-27 -29L-22 -24M27 -29L22 -24" fill="none" stroke="${pp}" stroke-width="5" ${lj}/><path d="M-9 8C-9 1 -17 -2 -17 -11A17 17 0 0 1 17 -11C17 -2 9 1 9 8Z" fill="${pp}" stroke="${acc}" stroke-width="4.5" ${lj}/><path d="M-7 15H7" fill="none" stroke="${acc}" stroke-width="5" ${lj}/>`) +
+    prop('gear', `<path d="${Array.from({ length: 8 }, (_, i) => { const a = i * TAU / 8, P = (r, d) => `${f1(r * Math.cos(a + d))} ${f1(r * Math.sin(a + d))}`; return `${i ? 'L' : 'M'}${P(15, -0.26)}L${P(22, -0.16)}L${P(22, 0.16)}L${P(15, 0.26)}`; }).join('')}Z" fill="${on}" stroke="${acc}" stroke-width="4.5" ${lj}/><circle r="6" fill="${pp}" stroke="${acc}" stroke-width="3.5"/>`) +
+    prop('term', `<rect x="-26" y="-19" width="52" height="38" rx="8" fill="${acc}"/><path d="M-15 -7L-7 0L-15 7" fill="none" stroke="${pp}" stroke-width="4.5" ${lj}/>` + E('path', 'tcur', `d="M0 8H12" fill="none" stroke="${on}" stroke-width="4.5" stroke-linecap="round"`)) +
+    prop('scan', `<path d="M-88 0H88" stroke="${pp}" stroke-width="12" stroke-linecap="round" opacity=".28"/><path d="M-88 0H88" stroke="${pp}" stroke-width="4.5" stroke-linecap="round"/>`) +
+    prop('lock', `<path d="M-9 -4V-11A9 9 0 0 1 9 -11V-4" fill="none" stroke="${acc}" stroke-width="5.5" ${lj}/><rect x="-16" y="-5" width="32" height="25" rx="6" fill="${acc}"/><path d="M0 5V11" stroke="${on}" stroke-width="5" stroke-linecap="round"/>`) +
+    prop('warn', `<path d="M0 -19L21 16H-21Z" fill="#FFB020" stroke="#FFB020" stroke-width="9" ${lj}/><path d="M0 -8V4" stroke="#2A1A00" stroke-width="5.5" stroke-linecap="round"/><circle cy="12" r="3.4" fill="#2A1A00"/>`) +
+    ['d0', 'd1', 'd2'].map((n, i) => prop(n, `<circle r="${[5, 6.5, 8][i]}" fill="${acc}"/>`)).join('') +
+    prop('arrow', `<path d="M0 13V-12M-10 -2L0 -12L10 -2" ${line} stroke="${acc}" stroke-width="7.5"/>`);
+  const dim = size ? ` width="${size}" height="${size}"` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-128 -128 256 256"${dim} role="img" aria-label="${title}"><title>${title}</title>${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${svg}</svg>`;
+}
+
+/** Render a standalone SVG string.
+ *  renderSVG({ state, theme, shape, animated: true })  -> looping, self-animating SVG (SMIL, no JS)
+ *  renderSVG({ state, theme, shape, animated: false, t }) -> frozen frame at time t (default: the state's poster frame)
+ *  character = 'aegi' | 'mail' | 'social' | 'files' | 'memory' | 'harness' | 'security' (sets shape + colours + body details)
+ *  theme = 'color' (the character's own colour) | 'dark' | 'light' | any THEMES name | a custom theme object
+ *  emblem (default true) = the logo "A" on the chest, shadow (default true) = ground shadow, rim (default false) = an inner outline ring. */
+function renderSVG({ state = 'idle', character = 'aegi', theme = 'color', shape, animated = true, t, size, fps = 20, title, emblem = true, rim = false, shadow = true } = {}) {
+  const st = STATES[state] || STATES.idle, T = resolveTheme(theme, character), who = { character, shape }, opt = { size, title: title || `${(CHARACTERS[character] || CHARACTERS.aegi).name} — ${st.label}`, uid: 'a', emblem: emblem && !shape, rim, shadow, character };
+  if (!animated) return markup(attrs(samplePose(state, t ?? st.poster, who)), null, T, opt);
+  const n = Math.max(2, Math.round(st.dur * fps)), frames = []; for (let i = 0; i <= n; i++) frames.push(attrs(samplePose(state, i === n ? 0 : st.dur * i / n, who)));
+  const anim = {}, first = frames[0];
+  for (const key in first) for (const a in first[key]) {
+    const v = frames.map(f => f[key][a]); if (v.every(x => x === v[0])) continue;
+    const keep = v.map((x, i) => i === 0 || i === n || !(v[i - 1] === x && v[i + 1] === x));       // drop redundant samples
+    const vals = v.filter((_, i) => keep[i]).join(';'), times = v.map((_, i) => f3(i / n)).filter((_, i) => keep[i]).join(';');
+    const common = `values="${vals}" keyTimes="${times}" dur="${st.dur}s" repeatCount="indefinite"`;
+    anim[key] = (anim[key] || '') + (a[0] === '@' ? `<animateTransform attributeName="transform" type="${a.slice(1)}" ${common}/>` : `<animate attributeName="${a}" ${common}/>`);
+  }
+  return markup(first, anim, T, opt);
+}
+
+/** Status colours used by tray icons and widgets. */
+const STATUS_COLORS = { idle: null, hello: '#22C55E', listening: '#EF4444', thinking: '#F59E0B', searching: '#F59E0B', working: '#3B82F6', speaking: '#22C55E', sending: '#3B82F6',
+  paused: '#9CA3AF', cancelled: '#9CA3AF', done: '#22C55E', notification: '#EF4444', confused: '#F59E0B', error: '#DC2626', sleeping: '#6B7280', celebrate: '#22C55E',
+  'mail-incoming': '#EF4444', 'mail-sending': '#3B82F6', 'mail-reading': '#F59E0B', 'social-typing': '#3B82F6', 'social-message': '#EF4444', 'social-react': '#22C55E',
+  'files-organizing': '#3B82F6', 'files-upload': '#3B82F6', 'files-found': '#22C55E', 'memory-saving': '#3B82F6', 'memory-recalling': '#22C55E', 'memory-linking': '#F59E0B',
+  'harness-running': '#3B82F6', 'harness-testing': '#F59E0B', 'harness-building': '#3B82F6', 'security-scanning': '#F59E0B', 'security-locked': '#22C55E', 'security-alert': '#DC2626' };
+/** Simplified square icon for the system tray / taskbar / favicons: body + eyes only, plus a status dot. Readable at 16px. */
+function renderTrayIcon({ state = 'idle', character = 'aegi', theme = 'color', shape, dot = true, size } = {}) {
+  const ch = CHARACTERS[character] || CHARACTERS.aegi, T = resolveTheme(theme, character), sh = shape || ch.shape, p = samplePose(state, (STATES[state] || STATES.idle).poster, { character, shape: sh }), flat = c => (Array.isArray(c) ? c[0] : c);
+  const grad = Array.isArray(T.body) ? `<defs><linearGradient id="t" gradientUnits="userSpaceOnUse" x1="-60" y1="-80" x2="60" y2="90">${T.body.map((c, i) => `<stop offset="${f2(i / (T.body.length - 1))}" stop-color="${c}"/>`).join('')}</linearGradient></defs>` : '';
+  const eyeT = (v, x) => { const e = v.slice(); e[6] = Math.max(e[6] * 1.25, 13); return `<g transform="translate(${x} ${-12 + ch.face[1]}) scale(${f3(Math.min(1.15, v[7] * 1.2))} ${f3(Math.max(0.3, v[8]) * 1.15)})"><path d="${quad(e)}" fill="none" stroke="${flat(T.eye)}" stroke-width="${f1(e[6])}" stroke-linecap="round"/></g>`; };
+  const c = dot && STATUS_COLORS[state];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-92 -86 184 184"${size ? ` width="${size}" height="${size}"` : ''}>${grad}<path d="${bodyPath(SHAPES[sh] || SHAPES.aegi)}" fill="${grad ? 'url(#t)' : T.body}"${T.stroke ? ` stroke="${flat(T.stroke)}" stroke-width="${(T.strokeWidth || 3) * 1.6}"` : ''}/>${eyeT(p.eL, -28)}${eyeT(p.eR, 28)}${c ? `<circle cx="58" cy="64" r="30" fill="${c}" stroke="#fff" stroke-width="7"/>` : ''}</svg>`;
+}
+
+// ───────────────────────── live component ─────────────────────────
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+
+    </script>
+    <script>
+/* Aegis desktop surfaces: shared runtime (state, live mascot, voice level, weather). */
+const A = (() => {
+  { let th = new URLSearchParams(location.search).get('theme'); try { th = th || localStorage.getItem('aegis.theme'); } catch {} if (th === 'light') document.documentElement.dataset.theme = 'light'; }   // dark is the default look
+  const api = window.aegis || null, ovl = window.aegisOverlay || null, PREVIEW = !api && !ovl;
+  const $ = (s, r = document) => r.querySelector(s), c01 = x => Math.min(1, Math.max(0, x)), tnow = () => performance.now() / 1000;
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const subs = {}, on = (n, f) => { (subs[n] = subs[n] || []).push(f); return f; }, emit = (n, a) => (subs[n] || []).forEach(f => { try { f(a); } catch (e) { console.error(e); } });
+  const ICON = { mic: '<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/>', open: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>', grid: '<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>', notch: '<rect x="3" y="5" width="18" height="6" rx="3"/><path d="M7 15h10M7 19h6"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>', up: '<path d="m18 15-6-6-6 6"/>', down: '<path d="m6 9 6 6 6-6"/>', pet: '<path d="M6 21V11a6 6 0 0 1 12 0v10Z"/><path d="M10 12v1M14 12v1"/>', pin: '<path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.700-6 10-6 10Z"/><circle cx="12" cy="11" r="2"/>', stop: '<rect x="7" y="7" width="10" height="10" rx="2"/>',
+    play: '<path d="M8 5v14l11-7Z" fill="currentColor"/>', pause: '<path d="M8 5v14M16 5v14" stroke-width="3"/>', next: '<path d="M5 5v14l9-7ZM17 5v14" fill="currentColor"/>', prev: '<path d="M19 5v14l-9-7ZM7 5v14" fill="currentColor"/>',
+    cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4"/><rect x="10" y="10" width="4" height="4"/>', shield: '<path d="M12 3 5 6v5c0 4.500 3 8 7 10 4-2 7-5.500 7-10V6Z"/><path d="m9 12 2 2 4-4"/>', chat: '<path d="M4 5h11v8H9l-4 3Z"/><path d="M15 9h5v8l-3-2h-6v-2"/>', cloud: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9.500 4.300 4.300 0 0 1 17.500 18Z"/>',
+    agent: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 0V7a3 3 0 0 0-3-3Z"/><path d="M12 8h4M12 12h6M12 16h4"/>', bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4Z"/><path d="M10 21h4"/>', check: '<path d="m5 12 5 5 9-10"/>', alarm: '<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.500 2M5 4 2.500 6.500M19 4l2.500 2.500"/>',
+    cal: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>', bt: '<path d="m7 7 10 10-5 4V3l5 4L7 17"/>', wifi: '<path d="M2 9a15 15 0 0 1 20 0M5.500 12.500a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.500" r=".8" fill="currentColor"/>', batt: '<rect x="2" y="8" width="17" height="9" rx="2.500"/><path d="M22 11v3"/>',
+    heart: '<path d="M12 20S4 15 4 9.500A4.500 4.500 0 0 1 12 7a4.500 4.500 0 0 1 8 2.500C20 15 12 20 12 20Z" fill="currentColor"/>', moon: '<path d="M14 3a8 8 0 1 0 7 10.500A6.500 6.500 0 0 1 14 3Z" fill="currentColor"/>', walk: '<circle cx="12" cy="4.500" r="2"/><path d="M12 8v6M8 10h8M12 14l-3 6M12 14l3 6"/>', flame: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9Z" fill="currentColor"/>',
+    card: '<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.500h18M7 15h3"/>', box: '<path d="m12 3 8 4.500v9L12 21l-8-4.500v-9Z"/><path d="m4 7.500 8 4.500 8-4.500M12 12v9"/>', nav: '<path d="m4 11 16-7-7 16-2-7Z"/>', video: '<rect x="3" y="7" width="12" height="10" rx="2.500"/><path d="m15 11 6-3v8l-6-3"/>', phone: '<path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
+    search: '<circle cx="11" cy="11" r="6.500"/><path d="m20 20-4.300-4.300"/>', plus: '<path d="M12 5v14M5 12h14"/>', timer: '<circle cx="12" cy="13.500" r="7"/><path d="M12 9.500v4M10 3h4"/>', vol: '<path d="M4 10v4h4l5 4V6l-5 4Z"/><path d="M16.500 9a4.500 4.500 0 0 1 0 6"/>', chart: '<path d="M3 17l5-5 4 3 8-9"/><path d="M16 6h4v4"/>', gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.600 5.600l2.100 2.100M16.300 16.300l2.100 2.100M5.600 18.400l2.100-2.100M16.300 7.700l2.100-2.100"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.500 1.500M17.500 17.500 19 19M5 19l1.500-1.500M17.500 6.500 19 5"/>', drop: '<path d="M12 3s6 6.500 6 11a6 6 0 0 1-12 0c0-4.500 6-11 6-11Z"/>', bed: '<path d="M3 18v-7h13a4 4 0 0 1 4 4v3M3 14h17M3 7v4M7 11V9h4v2"/>', send: '<path d="m5 12 14-7-5 14-2.500-5.500Z"/>' };
+  const icon = n => `<svg class="i" viewBox="0 0 24 24">${ICON[n]}</svg>`;
+  document.querySelectorAll('[data-i]').forEach(e => { e.insertAdjacentHTML('afterbegin', icon(e.dataset.i)); });
+
+  // ── state ──
+  const COLORS = { idle: '#5FD3A0', hello: '#5FD3A0', listening: '#F07167', thinking: '#F2B84B', searching: '#9C82F2', working: '#5B9BF5', sending: '#5B9BF5', speaking: '#E07A5F', notification: '#E07A5F', done: '#5FD3A0', celebrate: '#5FD3A0', error: '#F07167', confused: '#F2B84B', paused: '#8A8F94', cancelled: '#8A8F94', sleeping: '#8A8F94' };
+  const BUSY = ['working', 'thinking', 'searching', 'sending'], W = {}, notes = [];
+  const st = { state: 'idle', text: '', character: 'aegi', running: 0, listening: false, busy: false, history: [], label: 'Ready', color: COLORS.idle, task: { progress: null, steps: [], tools: null, text: '' } };
+  const setData = o => { if (!o || typeof o !== 'object') return; for (const k in o) W[k] = o[k]; emit('data', W); };
+  let noteId = 0;
+  /** notify({ title, body, kind: 'info' | 'done' | 'error' | 'ask', steps, progress, actions }) */
+  function notify(n) { if (!n) return; if (typeof n === 'string') n = { title: n }; const last = notes[0]; if (last && last.title === (n.title || '') && last.body === (n.body || n.detail || '') && Date.now() - last.at < 2500) return; n = { kind: 'info', ...n, title: n.title || 'Aegis', body: n.body || n.detail || '', id: n.id || 'n' + (++noteId), at: Date.now() }; notes.unshift(n); notes.length = Math.min(notes.length, 20); emit('notify', n); emit('data', W); }
+  const normSteps = (a, idx) => (Array.isArray(a) ? a : []).map((x, i) => { const o = typeof x === 'string' ? { text: x } : { ...x }; o.text = o.text || o.title || o.label || ''; o.state = o.state || (o.done ? 'done' : typeof idx === 'number' ? (i < idx ? 'done' : i === idx ? 'now' : 'todo') : 'todo'); return o; });
+  const norm = s => { s = String(s || '').toLowerCase().trim(); return s === 'running' ? 'working' : s === 'ready' ? 'idle' : s; };
+  const guess = v => { const l = String(v || '').toLowerCase(); return l.includes('listen') ? 'listening' : l.includes('working') || l.includes('running') ? 'working' : l.includes('think') || l.includes('queued') ? 'thinking' : l.includes('search') ? 'searching' : l.includes('speak') ? 'speaking' : l.includes('done') || l.includes('finish') || l.includes('complete') ? 'done' : l.includes('fail') || l.includes('error') ? 'error' : 'idle'; };
+  function update(p = {}) {
+    const prev = st.state, prevText = st.text;
+    if (p.character) st.character = String(p.character);
+    if (typeof p.running === 'number') st.running = p.running;
+    if (p.text !== undefined) { const v = String(p.text == null ? '' : p.text).trim(); st.text = /^(idle|ready)$/i.test(v) ? '' : v; }
+    if (p.state) st.state = norm(p.state); else if (p.text !== undefined && !p.keepState) st.state = guess(p.text);
+    if (typeof p.progress === 'number') st.task.progress = Math.max(0, Math.min(100, p.progress)); if (p.steps) st.task.steps = normSteps(p.steps, p.step); else if (typeof p.step === 'number') st.task.steps = normSteps(st.task.steps.map(x => ({ text: x.text })), p.step); if (p.tools != null) st.task.tools = p.tools;
+    st.listening = st.state === 'listening'; st.busy = BUSY.includes(st.state); if (st.busy && st.text) st.task.text = st.text;
+    st.label = st.state === 'idle' ? 'Ready' : st.state[0].toUpperCase() + st.state.slice(1); st.color = COLORS[st.state] || COLORS.idle;
+    document.documentElement.style.setProperty('--state', st.color);
+    document.documentElement.dataset.state = st.state;
+    const isNew = st.text && st.text !== prevText;
+    if (isNew) { st.history.unshift({ at: new Date(), state: st.state, text: st.text }); st.history.length = Math.min(st.history.length, 6); }
+    emit('change', st); if (prev !== st.state) emit('state', st); if (isNew) emit('message', st);
+    if (prev !== st.state && st.state === 'done') { const done = st.task.steps.map(x => ({ ...x, state: 'done' })); notify({ kind: 'done', title: 'Task finished', body: (st.text && !/^done\.?$/i.test(st.text) ? st.text : st.task.text) || 'Completed', steps: done }); st.task = { progress: null, steps: [], tools: null, text: '' }; }
+    else if (prev !== st.state && st.state === 'error') notify({ kind: 'error', title: 'Needs attention', body: st.text || 'The last step failed' });
+    else if (st.state === 'idle' && prev !== 'idle') st.task.progress = null;
+  }
+  // The host owns microphone state. Ask it to toggle the shared session and
+  // wait for its status event instead of painting a guessed listening state.
+  const toggleVoice = () => api?.voice?.();
+  const setHover = over => api?.hover?.(over);
+
+  // ── voice level: real level from the host when it sends one, otherwise a speech-like envelope ──
+  let ext = 0, extAt = -1e9, lv = 0, extLive = false;
+  const pushLevel = v => { ext = c01(+v || 0); extAt = performance.now(); };
+  const synth = t => { const g = Math.sin(t * 2.1) + Math.sin(t * 3.7 + 1.3); return c01((0.5 + 0.5 * Math.sin(t * 13)) * (0.6 + 0.4 * Math.sin(t * 5.3 + 0.7)) * (g > -1.1 ? 1 : 0.06)); };
+  const frames = []; const onFrame = f => frames.push(f);
+  (function loop() { const t = tnow(), live = performance.now() - extAt < 350; extLive = live; const target = live ? ext : st.state === 'speaking' ? synth(t) : st.state === 'listening' ? 0.55 * synth(t * 0.8 + 3) : 0; lv += (target - lv) * 0.4; for (const f of frames) { try { f(t, lv); } catch (e) { console.error(e); } } requestAnimationFrame(loop); })();
+  let barEls = [], barAt = 0;
+  let pulseEl, pulseAt = 0;
+  let barsFrameAt = 0;
+  onFrame(t => { if (t - barsFrameAt < 1 / 24) return; barsFrameAt = t; if (t - barAt > 0.6) { barAt = t; barEls = [...document.querySelectorAll('.bars')].filter(b => b.getClientRects().length).map(b => [...b.children]); } for (const it of barEls) it.forEach((b, i) => { const ph = i * 1.7, v = Math.max(lv * (0.55 + 0.45 * Math.sin(t * 9 + ph)), (st.busy ? 0.35 : 0) * (0.5 + 0.5 * Math.sin(t * 4 + ph)), 0.16 + 0.06 * Math.sin(t * 1.6 + ph)); b.style.transform = `scaleY(${v.toFixed(3)})`; }); if (pulseEl === undefined || t - pulseAt > 2) { pulseAt = t; pulseEl = document.querySelector('[data-pulse]'); } if (pulseEl && pulseEl.getClientRects().length) pulseEl.style.setProperty('--pulse', (1 + 0.04 * Math.sin(t * 1.5) + 0.28 * lv).toFixed(3)); });   // Animate only visible cards, at a bounded rate.
+
+  // ── live mascot (same engine as the in-app character) ──
+  const TALK = [-4, 3, 0, 6, 4, 3, 13], mascots = []; let uid = 0;
+  function mascot(el, size, o = {}) {
+    const m = { el, size, character: o.character || null, vr: 0, r: 0, swx: 0, popAt: -9, fid: null, fidAt: -9, state: 'idle', t0: tnow(), from: null, bAt: 0, g: [0, 0], gt: [0, 0], last: 0, fps: o.fps || 30, uid: 'aw' + (++uid), pose: null };
+    el.classList.add('mm');
+    m.play = s => { if (!STATES[s]) s = 'idle'; if (s === m.state && !STATES[s].once) return; m.from = m.pose; m.bAt = tnow(); m.state = s; m.t0 = tnow(); m.popAt = tnow(); };
+    m.sway = (vx = 0) => { m.swx = Math.max(-1, Math.min(1, vx)); };   // drag velocity -1..1: the body leans and wobbles back like jelly
+    m.fidget = name => { m.fid = name || ['wiggle', 'stretch', 'peek', 'nod'][Math.floor(Math.random() * 4)]; m.fidAt = tnow(); };
+    m.react = s => { if (STATES[s]) { m.state = ''; m.play(s); } };
+    m.hop = (h = 1) => { m.hopAt = tnow(); m.hopH = h; m.hopDir = Math.random() < 0.5 ? -1 : 1; }; m.hopAt = -9; m.hopH = 1; m.lively = !!o.lively; m.nextLife = tnow() + 3; m.mouseAt = -9;
+    m.resize = s => { m.size = s; };
+    if (o.state) m.play(o.state); else on('state', () => m.play(st.state));
+    m.set = (ch, s) => { if (ch) m.character = ch; if (s && s !== m.state) m.play(s); };
+    onFrame((T, a) => {
+      if (!el.isConnected || !el.getClientRects().length) return;
+      if (T - m.last < 1 / m.fps - 0.004) return; m.last = T;
+      const ch = CHARACTERS[m.character || st.character] ? (m.character || st.character) : 'aegi', S0 = STATES[m.state] || STATES.idle, base = o.state || st.state;
+      if (S0.once && T - m.t0 >= S0.dur) m.play(base !== m.state && STATES[base] && !STATES[base].once ? base : (S0.then || 'idle'));
+      let p = samplePose(m.state, T - m.t0, ch);
+      if (m.from) { const k = (T - m.bAt) / 0.3; if (k < 1) p = lerpPose(m.from, p, k * k * (3 - 2 * k)); else m.from = null; }
+      m.pose = p; const q = { ...p };
+      if (a > 0.015 && (m.state === 'speaking' || (extLive && m.state !== 'listening')) && Array.isArray(q.m) && q.m.length === TALK.length) { q.m = mix(q.m, TALK, c01(a * 1.25)); q.ty -= 3 * a; q.sy *= 1 + 0.035 * a; q.sx *= 1 - 0.02 * a; }
+      else if (m.state === 'listening') { q.sy *= 1 + 0.02 * a; }
+      // hop with anticipation (crouch), flight (stretch) and landing (squash + settle)
+      const hh = (T - m.hopAt) / 0.72; if (hh > 0 && hh < 1) { const H = m.hopH; if (hh < 0.16) { const c = Math.sin(Math.PI * hh / 0.16 * 0.5); q.sy *= 1 - 0.13 * H * c; q.sx *= 1 + 0.09 * H * c; q.ty += 3 * H * c; } else if (hh < 0.7) { const a2 = (hh - 0.16) / 0.54, b = 4 * a2 * (1 - a2); q.ty -= 20 * H * b; q.sy *= 1 + 0.10 * H * (1 - Math.abs(2 * a2 - 1)) + 0.03; q.sx *= 1 - 0.06 * H * (1 - Math.abs(2 * a2 - 1)); q.rot += 4 * H * Math.sin(Math.PI * 2 * a2) * (m.hopDir || 1); } else { const l = (hh - 0.7) / 0.3, s = Math.exp(-4 * l) * Math.cos(l * Math.PI * 3); q.sy *= 1 - 0.12 * H * s; q.sx *= 1 + 0.09 * H * s; q.ty += 2.5 * H * Math.max(0, s); } }
+      // every state change gets a little squash-and-stretch pop
+      const pk = (T - m.popAt) / 0.5; if (pk > 0 && pk < 1 && m.popAt > 0.6) { const s = Math.exp(-5 * pk) * Math.sin(pk * Math.PI * 4); q.sy *= 1 + 0.07 * s; q.sx *= 1 - 0.05 * s; }
+      // jelly spring for dragging / nudges
+      m.vr += (m.swx * 16 - m.r) * 0.16; m.vr *= 0.84; m.r += m.vr; m.swx *= 0.9; if (Math.abs(m.r) > 0.05) { q.rot += m.r; q.tx += m.r * 0.5; q.sx *= 1 + Math.abs(m.r) * 0.003; }
+      // small idle fidgets so the character never loops the same way twice
+      if (m.fid) { const f = (T - m.fidAt) / 0.9; if (f >= 1) m.fid = null; else { const e = Math.sin(Math.PI * f); if (m.fid === 'wiggle') q.rot += 6 * e * Math.sin(f * Math.PI * 6); else if (m.fid === 'stretch') { q.sy *= 1 + 0.08 * e; q.sx *= 1 - 0.05 * e; q.ty -= 3 * e; } else if (m.fid === 'peek') { q.rot += 9 * e; q.tx += 5 * e; if ('gx' in q) q.gx += 6 * e; } else if (m.fid === 'nod') { q.ty += 3 * e * Math.abs(Math.sin(f * Math.PI * 3)); q.sy *= 1 - 0.03 * e * Math.abs(Math.sin(f * Math.PI * 3)); } } }
+      // lean a touch toward whatever it is looking at
+      q.rot += m.g[0] * 2.2; q.tx += m.g[0] * 1.6;
+      if (m.lively && T > m.nextLife) { m.nextLife = T + 2.5 + Math.random() * 4; if (T - m.mouseAt > 2.5) { const r = Math.random(); if (m.state === 'idle' && r < 0.18) m.hop(0.6); else if (m.state === 'idle' && r < 0.42) m.fidget(); else if (r < 0.85) { m.gt = [(Math.random() * 2 - 1) * 0.9, (Math.random() - 0.6) * 0.6]; setTimeout(() => { if (tnow() - m.mouseAt > 2) m.gt = [0, 0]; }, 1100); } } }
+      m.g[0] += (m.gt[0] - m.g[0]) * 0.18; m.g[1] += (m.gt[1] - m.g[1]) * 0.18;
+      if ('gx' in q) q.gx += m.g[0] * 7; if ('gy' in q) q.gy += m.g[1] * 5;
+      el.innerHTML = markup(attrs(q), null, resolveTheme('color', ch), { size: m.size, uid: m.uid, character: ch, title: 'Aegis', shadow: o.shadow !== false });
+    });
+    mascots.push(m); return m;
+  }
+  // Mascot gaze: coalesced to one animation frame and measured at most every
+  // 120ms. Measuring every mascot on every mousemove forced a layout on each
+  // event, which is what made the notch feel like it was hanging.
+  let gazeAt = 0, gazeX = 0, gazeY = 0, gazeFrame = 0;
+  const applyGaze = () => {
+    gazeFrame = 0;
+    const t = tnow();
+    if (t - gazeAt < 0.12) return;
+    gazeAt = t;
+    for (const m of mascots) {
+      if (!m.el.isConnected || !m.el.getClientRects().length) continue;
+      const r = m.el.getBoundingClientRect();
+      const dx = gazeX - (r.left + r.width / 2), dy = gazeY - (r.top + r.height / 2);
+      const d = Math.hypot(dx, dy) || 1, k = Math.min(1, d / 160);
+      m.gt = [dx / d * k, dy / d * k];
+      m.mouseAt = t;
+    }
+  };
+  document.addEventListener('mousemove', e => {
+    gazeX = e.clientX; gazeY = e.clientY;
+    if (gazeFrame) return;
+    gazeFrame = requestAnimationFrame(applyGaze);
+  }, { passive: true });
+  document.addEventListener('mouseleave', () => { for (const m of mascots) m.gt = [0, 0]; });
+
+  // ── weather ──
+  const WX = { data: null, status: 'loading', loc: store.get('aegis.weather.loc', null) };
+  const kindOf = c => c == null ? 'cloud' : c === 0 ? 'clear' : c <= 2 ? 'partly' : c === 3 ? 'cloud' : c <= 48 ? 'fog' : c <= 57 ? 'drizzle' : c <= 67 ? 'rain' : c <= 77 ? 'snow' : c <= 82 ? 'rain' : c <= 86 ? 'snow' : 'storm';
+  const kindOfText = s => { s = String(s || '').toLowerCase(); return /thunder|storm/.test(s) ? 'storm' : /snow|sleet|hail/.test(s) ? 'snow' : /drizzle/.test(s) ? 'drizzle' : /rain|shower/.test(s) ? 'rain' : /fog|mist|haze|smoke/.test(s) ? 'fog' : /part|few|scatter/.test(s) ? 'partly' : /cloud|overcast/.test(s) ? 'cloud' : /clear|sun|fair/.test(s) ? 'clear' : 'cloud'; };
+  const DESC = { clear: 'Clear', partly: 'Partly cloudy', cloud: 'Cloudy', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Thunderstorm' };
+  const pick = (o, ...k) => { for (const x of k) if (o[x] != null) return o[x]; };
+  function wxSet(w, source) {
+    if (!w || typeof w !== 'object') return; const code = pick(w, 'code', 'weatherCode', 'weather_code'), cond = pick(w, 'condition', 'desc', 'summary', 'description'), temp = pick(w, 'temp', 'temperature', 'tempC', 'temperature_2m');
+    if (temp == null || isNaN(+temp)) return; const kind = w.kind || (code != null ? kindOf(+code) : kindOfText(cond));
+    WX.data = { temp: +temp, kind, desc: cond || DESC[kind], city: pick(w, 'city', 'location', 'name') || WX.loc?.name || '', hi: pick(w, 'high', 'hi', 'max'), lo: pick(w, 'low', 'lo', 'min'), feels: pick(w, 'feels', 'feelsLike'), humidity: w.humidity, wind: w.wind, uv: pick(w, 'uv', 'uvIndex'), rain: pick(w, 'rain', 'precipitation'), sunset: w.sunset, day: w.day || [], night: w.isDay === false || w.isDay === 0 || w.night === true,
+      hours: (pick(w, 'hours', 'hourly') || []).slice(0, 4).map(h => ({ label: h.label || (h.time ? new Date(h.time).toLocaleTimeString([], { hour: 'numeric' }) : ''), temp: +h.temp, kind: h.kind || (h.code != null ? kindOf(+h.code) : kindOfText(h.condition)), night: h.isDay === false || h.isDay === 0 })), sample: !!w.sample, source };
+    WX.status = 'ok'; emit('weather', WX);
+  }
+  async function wxFetch() {
+    try { if (api?.getWeather) { const w = await api.getWeather(); if (w) { wxSet(w, 'host'); return; } } } catch {}
+    if (WX.data && WX.data.source === 'host') return;
+    if (!WX.loc) { if (PREVIEW) wxSample(); else { WX.status = 'need-loc'; emit('weather', WX); } return; }
+    try {
+      const u = `https://api.open-meteo.com/v1/forecast?latitude=${WX.loc.lat}&longitude=${WX.loc.lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,precipitation&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,uv_index_max,sunset&forecast_days=2&timezone=auto`;
+      const j = await (await fetch(u)).json(), c = j.current, i0 = Math.max(0, j.hourly.time.findIndex(x => x > c.time));
+      wxSet({ temp: c.temperature_2m, code: c.weather_code, city: WX.loc.name, high: j.daily.temperature_2m_max[0], low: j.daily.temperature_2m_min[0], feels: c.apparent_temperature, humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, isDay: c.is_day, uv: j.daily.uv_index_max && j.daily.uv_index_max[0], rain: c.precipitation, sunset: j.daily.sunset && j.daily.sunset[0], day: j.hourly.time.slice(0, 24).map((x, k) => ({ h: k, temp: j.hourly.temperature_2m[k] })),
+        hours: [0, 1, 2, 3].map(k => ({ time: j.hourly.time[i0 + k * 2], temp: j.hourly.temperature_2m[i0 + k * 2], code: j.hourly.weather_code[i0 + k * 2], isDay: j.hourly.is_day[i0 + k * 2] })) }, 'open-meteo');
+    } catch { if (PREVIEW) wxSample(); else if (!WX.data) { WX.status = 'offline'; emit('weather', WX); } }
+  }
+  const wxSample = () => wxSet({ temp: 24, code: 2, city: WX.loc?.name || 'Sample city', high: 27, low: 15, sample: true, isDay: 1, feels: 24, humidity: 38, uv: 3, rain: 0, sunset: '2026-01-01T17:42', day: Array.from({ length: 24 }, (_, h) => ({ h, temp: 17 + 9 * Math.max(0, Math.sin((h - 6) / 12 * Math.PI)) })), hours: [['3 PM', 26, 1], ['5 PM', 24, 2], ['7 PM', 21, 3], ['9 PM', 18, 61]].map(h => ({ label: h[0], temp: h[1], code: h[2] })) }, 'sample');
+  async function wxSearch(name) {
+    name = String(name || '').trim(); if (!name) return false;
+    try { const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(name)}`)).json(), r = j.results && j.results[0]; if (!r) return false; WX.loc = { name: r.name, lat: r.latitude, lon: r.longitude }; }
+    catch { if (!PREVIEW) return false; WX.loc = { name, lat: 0, lon: 0 }; }
+    store.set('aegis.weather.loc', WX.loc); api?.action?.('weather-location', WX.loc); if (WX.data) WX.data.source = ''; await wxFetch(); return true;
+  }
+  window.addEventListener('storage', e => { if (e.key === 'aegis.weather.loc') { WX.loc = store.get('aegis.weather.loc', null); wxFetch(); } });
+  const deg = v => (v == null || isNaN(+v) ? '–' : Math.round(+v) + '°');
+  function wxIcon(kind, night, s = 24) {
+    const cloud = (x = '') => `<path ${x} d="M7.5 18a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17.6 9.6 4.2 4.2 0 0 1 17 18Z" fill="var(--card2)" stroke="var(--text)" stroke-width="1.5" stroke-linejoin="round"/>`;
+    const sun = (cx, cy, r) => `<g class="spin" style="transform-origin:${cx}px ${cy}px"><circle cx="${cx}" cy="${cy}" r="${r}" fill="#F2B84B"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<path d="M${cx} ${cy - r - 1.6}v-2" stroke="#F2B84B" stroke-width="1.6" stroke-linecap="round" transform="rotate(${a} ${cx} ${cy})"/>`).join('')}</g>`;
+    const moon = (x, y, k) => `<path transform="translate(${x} ${y}) scale(${k})" d="M14 3a7 7 0 1 0 7 9.500A6 6 0 0 1 14 3Z" fill="#C9C2F5"/>`;
+    const drops = c => [8.5, 12, 15.500].map(x => `<path class="drop" d="M${x} 19.500l-1 2.500" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`).join('');
+    let b = '';
+    if (kind === 'clear') b = night ? moon(0, 0, 1) : sun(12, 12, 4.6);
+    else if (kind === 'partly') b = (night ? moon(8, -1, 0.62) : sun(16.500, 7.500, 3.2)) + `<g class="drift">${cloud()}</g>`;
+    else if (kind === 'cloud') b = `<g class="drift">${cloud()}</g>`;
+    else if (kind === 'fog') b = cloud('transform="translate(0 -3)"') + '<path class="drift" d="M6 19h12M8 22h8" stroke="var(--dim)" stroke-width="1.6" stroke-linecap="round"/>';
+    else if (kind === 'rain' || kind === 'drizzle') b = cloud('transform="translate(0 -3)"') + drops('#5B9BF5');
+    else if (kind === 'snow') b = cloud('transform="translate(0 -3)"') + [8.5, 12, 15.500].map(x => `<circle class="drop" cx="${x}" cy="20" r="1.1" fill="#DCE8F5"/>`).join('');
+    else b = cloud('transform="translate(0 -3)"') + '<path class="bolt" d="M12.500 15l-2.500 4h3l-1.500 3.500" fill="none" stroke="#F2B84B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>';
+    return `<svg class="wxi" width="${s}" height="${s}" viewBox="0 0 24 24">${b}</svg>`;
+  }
+  // ── host wiring (same contract as before, plus optional level / weather) ──
+  // ---- intent router: what the user said → a command or a notch view (English + Hinglish keywords) ----
+  const INTENTS = [
+    ['cmd:task', /^(add (a )?(task|to-?do)|remind me to|new task|task)\b[: ]*/], ['cmd:focus-stop', /\b(stop|pause|end)\b.*\b(focus|pomodoro)\b/], ['cmd:focus', /\b(focus|pomodoro)\b/], ['cmd:workspace', /\b(workspace|my tasks|to-?do list|notepad|my notes)\b/],
+    ['cmd:close', /^(close|dismiss|never ?mind|cancel that|band karo|hata do)\b/],
+    ['cmd:widgets-hide', /\b(hide|close|band)\b.*\bwidgets?\b/], ['cmd:widgets', /\bwidgets?\b/],
+    ['cmd:mascot', /\b(show|hide|toggle)\b.*\bmascot\b/], ['cmd:notch', /\b(hide|toggle)\b.*\bnotch\b/],
+    ['cmd:open', /\b(open|launch|show|kholo|khol)\b.*\b(aegis|ae?jis|ejs|app|dashboard|main window)\b|\b(aegis|app)\b.*\b(kholo|khol do)\b/],
+    ['timer', /\b(timer|countdown|stopwatch)\b/], ['alarms', /\b(alarms?|wake me)\b/],
+    ['clock', /\btime\b|\bsamay\b|kitne baje|\bbaj[ea]\b|o'?clock/],
+    ['live:flight', /\b(flights?|boarding|plane|gate)\b/], ['live:ride|drop|cab', /\b(ride|cab|uber|ola|driver|taxi)\b/], ['live:charg', /\b(charging|charger|ev)\b/], ['live:order|pickup', /\b(order|pickup|pick up|food)\b/], ['live:lap', /\blaps?\b/],
+    ['tracking', /\b(package|parcel|delivery|courier|shipment)\b/], ['navigation', /\b(directions?|navigat\w*|route|how far)\b/],
+    ['schedule', /\b(date|calendar|schedule|agenda|events?|meetings?|tareekh|tarikh|tithi|what day|which day|today)\b/],
+    ['weather', /\b(weather|temperature|rain\w*|forecast|umbrella|mausam|sunset|humid\w*)\b/],
+    ['media', /\b(songs?|music|track|playing|play|pause|gaana|gana|volume|spotify|next song)\b/],
+    ['system', /\b(gpu|cpu|ram|memory|vram|resources?|system (usage|load)|performance)\b/],
+    ['devices', /\b(devices?|bluetooth|headphones?|earbuds?|airpods|connected|battery)\b/],
+    ['market', /\b(stocks?|shares?|price|market|bitcoin|btc|crypto|nifty|sensex|eth)\b/],
+    ['health', /\b(health|steps|sleep|calories?|heart ?rate|pulse)\b/], ['payment', /\b(payments?|spend|spent|expenses?|bills?|transactions?|kharcha)\b/],
+    ['notes', /\b(notifications?|what (did|have) you (do|done)|activity|done so far)\b/], ['security', /\b(permissions?|security)\b/], ['model', /\b(model|provider)\b/],
+    ['call', /\bcall\b/], ['agents', /\b(sub-?agents?|agents?|workers?|delegat\w*|what are you doing|working on|task status|progress)\b/], ['ask', /\b(type|keyboard|ask bar)\b/],
+  ];
+  /** intent("what's the time?") → { view: 'clock' } · intent('open aegis') → { cmd: 'open' } · null when nothing matches */
+  const intent = text => { const t = String(text || '').toLowerCase().replace(/^(you|user)\s*:\s*/, '').replace(/^(hey |ok |okay )?(aegis|ae?jis|ejs)[,!. ]*/, '').trim(); if (!t) return null; for (const [id, re] of INTENTS) if (re.test(t)) { const [a, b] = id.split(':'); return a === 'cmd' ? { cmd: b, text: t } : { view: a, q: b || '', text: t }; } return null; };
+  let lastHeard = '', lastHeardAt = 0;
+  const hear = text => { const now = Date.now(); if (!text || (text === lastHeard && now - lastHeardAt < 4000)) return; lastHeard = text; lastHeardAt = now; emit('heard', { text, intent: intent(text) }); };
+  // ---- subagents: W.agents = [{ id, name, character, state, task, progress, parent }] ----
+  const DONE_ST = ['idle', 'done', 'paused', 'error', 'cancelled'], agentKey = a => a.id || a.name;
+  const activeAgents = () => (W.agents || []).filter(a => !DONE_ST.includes(a.state));
+  let seenAgents = null;
+  on('data', () => { const list = W.agents || [], cur = new Map(list.map(a => [agentKey(a), a.state])); if (seenAgents) for (const a of list) { const was = seenAgents.get(agentKey(a)); if (was === undefined && !DONE_ST.includes(a.state)) emit('spawn', a); else if (was !== undefined && was !== a.state && a.state === 'done') emit('agent-done', a); else if (was !== undefined && DONE_ST.includes(was) && !DONE_ST.includes(a.state)) emit('spawn', a); } seenAgents = cur; });
+  /** agentEvent('spawn' | 'update' | 'done' | 'remove', agent): incremental alternative to sending the whole `agents` array */
+  const agentEvent = (type, a) => { if (!a) return; const list = (W.agents || []).slice(), i = list.findIndex(x => agentKey(x) === agentKey(a)); if (type === 'remove') { if (i >= 0) list.splice(i, 1); } else { const next = { ...(i >= 0 ? list[i] : { state: 'working' }), ...a }; if (type === 'done') { next.state = 'done'; next.progress = 100; } if (i >= 0) list[i] = next; else list.push(next); } setData({ agents: list }); };
+  const ingest = p => {
+    if (p && typeof p === 'object') {
+      if (p.weather) wxSet(p.weather, 'host'); if (typeof p.level === 'number') pushLevel(p.level);
+      if (p.widgets) setData(p.widgets); if (p.media !== undefined) setData({ media: p.media }); if (Array.isArray(p.agents || p.subagents)) setData({ agents: p.agents || p.subagents }); if (p.agent && typeof p.agent === 'object') agentEvent(p.agent.event || 'update', p.agent); if (p.x) setData({ x: { ...(W.x || {}), ...p.x } }); if (p.metrics) sysSet(p.metrics);
+      if (p.notice || p.notification) notify(p.notice || p.notification);
+      if (p.view) emit('view', typeof p.view === 'string' ? { id: p.view } : p.view); if (p.heard || p.query) hear(p.heard || p.query);
+      const text = p.status ?? p.text ?? p.prompt;
+      if (text !== undefined || p.state || p.character || typeof p.runningCount === 'number' || typeof p.progress === 'number' || p.steps || typeof p.step === 'number' || p.tools != null) update({ state: p.state || (text === undefined ? st.state : undefined), text, character: p.character, running: p.runningCount, progress: p.progress, steps: p.steps, step: p.step, tools: p.tools });
+    } else update({ text: p });
+  };
+  const EVENTS = { 'mic:start': ['listening', 'Listening…'], 'mic:stop': ['thinking', 'Thinking…'], 'agent:thinking': ['thinking', 'Thinking…'], 'agent:working': ['working', 'Working…'], 'agent:done': ['done', 'Done'], 'app:idle': ['idle', ''], 'tts:start': ['speaking'], 'speak:start': ['speaking'], 'agent:speaking': ['speaking'], 'tts:stop': ['idle'], 'tts:end': ['idle'], 'speak:end': ['idle'] };
+  api?.onStatus?.(ingest); ovl?.onStatus?.(text => ingest(text));
+  api?.onUpdate?.(patch => { if (patch?.transcript?.length) { const l = patch.transcript[patch.transcript.length - 1]; if (l.role === 'user') hear(l.text); update({ text: `${l.role === 'user' ? 'You' : 'Aegis'}: ${l.text}`, keepState: true }); } else if (patch) ingest(patch); });
+  api?.onEvent?.((ev, data) => { const name = typeof ev === 'string' ? ev : ev?.type; if (/^(sub)?agent:(spawn|start|update|progress|done|finish|remove|end)$/.test(name || '') && data && typeof data === 'object') return agentEvent(/spawn|start/.test(name) ? 'spawn' : /done|finish/.test(name) ? 'done' : /remove|end/.test(name) ? 'remove' : 'update', data); const e = EVENTS[name]; if (e) update(e.length > 1 ? { state: e[0], text: e[1] } : { state: e[0] }); if ((name === 'voice:level' || name === 'tts:level' || name === 'mic:level')) pushLevel(typeof data === 'number' ? data : ev?.level); });
+  api?.onLevel?.(pushLevel); api?.onWeather?.(w => wxSet(w, 'host')); api?.onWidgets?.(setData); api?.onNotify?.(notify);
+  // system metrics (same getSystemMetrics() the shell already exposes)
+  const hist = { cpu: [], mem: [], gpu: [] };
+  function sysSet(d) { if (!d) return; const v = { cpu: d.cpuPercent ?? d.cpu, mem: d.memoryPercent ?? d.mem, gpu: d.gpuPercent ?? d.gpu, used: d.usedMemoryGb, total: d.totalMemoryGb, up: d.uptimeHours }; for (const k of ['cpu', 'mem', 'gpu']) if (v[k] != null) { hist[k].push(+v[k]); if (hist[k].length > 14) hist[k].shift(); } W.system = { ...v, hist }; emit('data', W); }
+  const sysPoll = async () => { try { sysSet(await api?.getSystemMetrics?.()); } catch {} };
+  /** Widget action → host. Media goes through the existing mediaControl(); the rest through action('widget', …). */
+  function act(id, action, value) {
+    if (id === 'app') return action === 'talk' ? toggleVoice() : action === 'open' ? api?.show?.() : action === 'widgets' ? api?.toggleWidgets?.() : action === 'notch' ? api?.toggleNotch?.() : action === 'mascot' ? api?.toggleMascot?.() : undefined;
+    if (id === 'media') { if (action === 'volume') { W.media = { ...(W.media || {}), volume: value }; emit('data', W); api?.action?.('volume', { value }); return; } if (action === 'playPause' && W.media) { W.media = { ...W.media, playing: !W.media.playing }; emit('data', W); } return api?.mediaControl?.(action); }
+    if (id === 'ask') { hear(value); return api?.ask ? api.ask(value) : api?.action?.('ask', { text: value }); }
+    if (id === '__never') return api?.ask ? api.ask(value) : api?.action?.('ask', { text: value });
+    api?.action?.('widget', { id, action, value }); if (action === 'open') api?.show?.();
+  }
+
+  // ── clock ──
+  const tick = () => emit('tick', new Date()); setInterval(tick, 1000);
+  const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // ── browser preview only: a small strip to try every state. Never shown inside the app. ──
+  if (PREVIEW) {
+    document.documentElement.classList.add('preview');
+    const demo = { Idle: ['idle', ''], Listen: ['listening', 'Listening…'], Think: ['thinking', 'Thinking about your request…'], Speak: ['speaking', 'Aegis: All 42 tests passed. Want me to push the branch?'], Error: ['error', 'Failed: could not reach the voice daemon'] };
+    const STEPS = ['Search academic sources', 'Extract relevant information', 'Compare findings', 'Prepare final report'];
+    const POOL = [['Web researcher', 'memory', 'Searching 14 sources'], ['Mail drafter', 'mail', 'Writing reply to Priya'], ['File sorter', 'files', 'Organising Downloads'], ['Code reviewer', 'harness', 'Reading pull request #42'], ['Fact checker', 'security', 'Verifying 6 claims'], ['Summariser', 'social', 'Condensing the report']]; let spawnN = 0;
+    const spawnDemo = () => { const p = POOL[spawnN % POOL.length], id = 'sub' + (++spawnN), a = { id, name: p[0], character: p[1], task: p[2], state: 'working', progress: 0, parent: 'Aegis', model: 'gemini-flash', tools: 2, log: ['> plan: 3 steps', '> tool: search("' + p[2].toLowerCase() + '")', '> reading results…'] }; agentEvent('spawn', a); if (st.state === 'idle') update({ state: 'working', text: 'Delegating to ' + activeAgents().length + ' subagent' + (activeAgents().length > 1 ? 's' : '') }); let pr = 0; const iv = setInterval(() => { const me = (W.agents || []).find(x => x.id === id); if (!me) return clearInterval(iv); if (me.state === 'paused') return; pr += 4 + Math.random() * 6; if (pr >= 100) { clearInterval(iv); agentEvent('done', { id }); setTimeout(() => { agentEvent('remove', { id }); if (!activeAgents().length && st.state === 'working') update({ state: 'done', text: 'All subagents finished' }); }, 3500); } else agentEvent('update', { id, progress: Math.round(pr), state: pr > 55 ? 'working' : 'searching', tools: 2 + Math.floor(pr / 20) }); }, 700); };
+    const runTask = () => { let i = 0; update({ state: 'working', text: 'Research agent: analysing 12 papers', steps: STEPS, step: 0, progress: 4, tools: 0, running: 2 }); const iv = setInterval(() => { i++; if (i >= 16) { clearInterval(iv); update({ state: 'done', text: 'Done: report on 12 papers is ready', running: 0 }); return; } update({ state: i % 5 === 2 ? 'searching' : 'working', text: `Research agent: ${STEPS[Math.min(3, i >> 2)].toLowerCase()}`, step: Math.min(3, i >> 2), progress: Math.round(i / 16 * 100), tools: i >> 1, keepState: false }); }, 900); };
+    addEventListener('DOMContentLoaded', () => { const b = document.createElement('div'); b.id = 'pv'; b.innerHTML = '<span>Preview</span>' + [...Object.keys(demo), 'Run task', 'Notify', 'Spawn'].map(k => `<button data-k="${k}">${k}</button>`).join(''); document.body.appendChild(b); b.addEventListener('click', e => { const k = e.target.dataset.k; if (k === 'Run task') runTask(); else if (k === 'Spawn') spawnDemo(); else if (k === 'Notify') notify({ kind: 'ask', title: 'Permission needed', body: 'Research agent wants to read Documents/papers', actions: ['Allow', 'Deny'] }); else if (k) update({ state: demo[k][0], text: demo[k][1] }); }); });
+    const now = Date.now();
+    setData({ agents: [{ name: 'Research agent', character: 'memory', state: 'working', task: 'Analysing research papers', progress: 68 }, { name: 'Mail agent', character: 'mail', state: 'thinking', task: 'Drafting reply to Priya', progress: 30 }, { name: 'Files agent', character: 'files', state: 'done', task: 'Sorted 48 downloads', progress: 100 }, { name: 'Security', character: 'security', state: 'idle', task: 'Watching permissions' }],
+      voice: { stt: 'Local STT', lang: 'English', tts: 'Kokoro' }, security: { pending: 2 }, model: { provider: 'Gemini', model: '2.5', mode: 'Cloud inference', status: 'Connected' }, conversations: { active: 4 },
+      schedule: { more: 16, items: [{ title: 'Quick exercise', start: '7:00', end: '7:30', color: '#F2555A' }, { title: 'Check emails', start: '9:00', end: '9:15', color: '#4ADE80' }, { title: 'Prioritize tasks', start: '9:30', end: '10:00', color: '#5B9BF5' }] },
+      alarms: [{ id: 'a1', time: '07:30', repeat: 'Once', on: false }, { id: 'a2', time: '08:00', repeat: 'Daily', on: true }, { id: 'a3', time: '08:45', repeat: 'Once', on: false }],
+      media: { title: 'Blue Hour', artist: 'Orrin', app: 'Spotify', position: 93, duration: 190, playing: true, volume: 69 },
+      devices: [{ name: 'Headset', kind: 'audio', battery: 81, connected: true }, { name: 'Mouse', kind: 'input', battery: 43, connected: true }, { name: 'Keyboard', kind: 'input', battery: 67, connected: true }],
+      health: { sleep: '4h 22min', steps: 8367, calories: 351, heart: 82 }, market: [{ symbol: 'BTC', name: 'Bitcoin', price: 35103.8, change: 0.14, currency: '$', points: [30, 28, 31, 27, 26, 33, 41, 44, 39, 37, 40, 46] }],
+      payment: { month: 'This month', total: 104.02, currency: '$', last4: '9412', latest: { name: 'Coffee shop', amount: 5.42 } }, live: [{ id: 'ride', icon: 'nav', title: 'Drop-off in 12 min', value: '4.2 km', progress: 64, color: 'green', sub: 'White sedan · arriving 6:48 PM' }, { id: 'flight', glyph: '✈', title: 'Flight · on time', value: '1h 42m', from: 'DEL', to: 'BOM', progress: 38, color: 'blue' }, { id: 'ev', glyph: '⚡', title: 'Charging', value: '78%', progress: 78, color: 'green', sub: '22 min to full' }, { id: 'hr', icon: 'heart', title: 'Heart rate', value: '72 bpm', color: 'red', sub: 'Resting' }, { id: 'lap', icon: 'timer', title: 'Lap 4', value: '1:42.6', color: 'amber', sub: 'Best 1:39.8' }, { id: 'order', glyph: '☕', title: 'Order ready for pickup', value: '#214', color: 'accent', sub: 'Counter 2' }], tracking: { title: 'Package', status: 'Out for delivery', eta: '2 PM', progress: 62, stops: 4, by: 'Courier' },
+      navigation: { next: 'Turn right in 20 m', destination: 'Office', distance: '8.0 km', eta: '16 min' }, meeting: { title: 'Design review', start: new Date(now + 12 * 60000).toISOString(), people: 'Priya, Arjun +2', app: 'Meet' },
+      call: { name: 'Lena', agent: 'Call agent', startedAt: now - 264000, status: 'On call' }, status: { wifi: 'Home-5G', bluetooth: 3, battery: 76, charging: true }, replies: ['Please repeat', 'Got it. Thanks!'] });
+    sysSet({ cpuPercent: 31, memoryPercent: 58, gpuPercent: 42, usedMemoryGb: 9.3, totalMemoryGb: 16, uptimeHours: 5 }); setInterval(() => sysSet({ cpuPercent: 20 + Math.round(Math.random() * 40), memoryPercent: 55 + Math.round(Math.random() * 8), gpuPercent: 25 + Math.round(Math.random() * 45), usedMemoryGb: 9.3, totalMemoryGb: 16, uptimeHours: 5 }), 2500);
+    setInterval(() => { const m = W.media; if (m && m.playing) { m.position = (m.position + 1) % m.duration; emit('data', W); } }, 1000);
+  }
+  const start = () => { update({ state: 'idle', text: '' }); tick(); wxFetch(); setInterval(wxFetch, 15 * 60 * 1000); };
+  return { api, PREVIEW, $, esc, st, on, emit, update, toggleVoice, setHover, intent, hear, activeAgents, agentEvent, tnow, onFrame, mascot, wxIcon, wxSearch, wxFetch, WX, deg, hm, icon, level: () => lv, pushLevel, start, W, notes, notify, setData, act, store, COLORS, refreshSystemMetrics: sysPoll };
+})();
+
+/* Aegis widget library. Every card is data-driven: it shows when it has something real to show. */
+const Cards = (() => {
+  const { st, W, esc, icon, on, act, WX, deg, hm, store, notes } = A;
+  const head = (ic, title, right = '') => `<header>${icon(ic)}<b>${esc(title)}</b><span class="r">${right}</span></header>`;
+  const badge = (t, c = 'var(--green)') => `<span class="badge" style="--c:${c}">${esc(t)}</span>`;
+  const pbar = (p, c = 'var(--state)', run = false) => `<div class="pbar${run ? ' run' : ''}" style="--c:${c}"><i style="width:${Math.max(0, Math.min(100, p || 0))}%"></i></div>`;
+  const ring = (p, s, c, inner = '') => `<svg width="${s}" height="${s}" viewBox="0 0 36 36" style="flex:0 0 auto"><circle cx="18" cy="18" r="15" fill="none" stroke="var(--card3)" stroke-width="3.4"/><circle cx="18" cy="18" r="15" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="${(Math.max(0, Math.min(100, p)) * 0.9425).toFixed(1)} 94.25" transform="rotate(-90 18 18)"/>${inner}</svg>`;
+  const rtext = (t, size = 9.5) => `<text x="18" y="${18 + size * 0.36}" text-anchor="middle" font-size="${size}" font-weight="700" fill="currentColor">${t}</text>`;
+  const spark = (pts, w, h, c) => { if (!pts || pts.length < 2) return ''; const mn = Math.min(...pts), mx = Math.max(...pts), X = i => i / (pts.length - 1) * w, Y = v => h - 3 - (v - mn) / (mx - mn || 1) * (h - 6); let d = `M0 ${Y(pts[0]).toFixed(1)}`; for (let i = 1; i < pts.length; i++) { const x0 = X(i - 1), x1 = X(i), xm = (x0 + x1) / 2; d += ` C${xm.toFixed(1)} ${Y(pts[i - 1]).toFixed(1)} ${xm.toFixed(1)} ${Y(pts[i]).toFixed(1)} ${x1.toFixed(1)} ${Y(pts[i]).toFixed(1)}`; } return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="display:block"><path d="${d} L${w} ${h} L0 ${h}Z" fill="${c}" opacity=".14"/><path d="${d}" fill="none" stroke="${c}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`; };
+  const B = (label, a, cls = '') => `<button class="btn ${cls}" data-act="${a}">${label}</button>`;
+  const bars = (n, c, h = 18) => `<span class="bars" style="--c:${c};height:${h}px">${'<i></i>'.repeat(n)}</span>`;
+  const pet = (ch, state, s, key) => { ch = CHARACTERS[ch] ? ch : 'aegi'; return markup(attrs(samplePose(STATES[state] ? state : 'idle', 0.4, ch)), null, resolveTheme('color', ch), { size: s, uid: 'c' + key, character: ch, title: 'Aegis', shadow: false }); };
+  const mmss = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s % 60).padStart(2, '0'); };
+  const money = (v, c = '') => { const [a, b] = Number(v).toFixed(2).split('.'); return `${c}${Number(a).toLocaleString('en-US')}<small>.${b}</small>`; };
+  const SC = s => A.COLORS[s] || 'var(--green)', cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+  const pct = () => st.task.progress, taskLine = () => st.text ? st.text.replace(/^[A-Za-z ]{2,18}:\s*/, '') : '';
+  const local = { size: store.get('aegis.w.size', {}), wxEdit: false, timers: store.get('aegis.timers', []), notepad: (() => { const v = store.get('aegis.notepad', []); return Array.isArray(v) ? v : []; })() };
+  const stepsHtml = a => `<div class="steps">${a.map((x, i) => `<div class="${x.state === 'done' ? 'done' : x.state === 'now' ? 'now' : ''}"><i>${x.state === 'done' ? '✓' : x.state === 'now' ? '' : i + 1}</i><span class="el">${esc(x.text)}</span></div>`).join('')}</div>`;
+
+  const COL = { green: 'var(--green)', blue: 'var(--blue)', violet: 'var(--violet)', amber: 'var(--amber)', red: 'var(--red)', pink: 'var(--pink)', cyan: 'var(--cyan)', accent: 'var(--accent)' };
+  let liveQ = null; const liveList = () => { const live = Array.isArray(W.live) ? W.live : []; const m = liveQ ? live.filter(x => liveQ.test([x.id, x.title, x.sub].join(' '))) : []; return m.length ? m.slice(0, 3) : live.slice(0, liveQ ? 3 : 6); };
+  let selAgent = null;
+  const agentDetail = a => { const id = esc(a.id || a.name), steps = (a.steps || []).map(x => typeof x === 'string' ? { text: x, state: 'todo' } : x), log = [].concat(a.log || a.detail || []).slice(-3), paused = a.state === 'paused', dn = a.state === 'done';
+    return `<div class="sa-d"><div class="f">${cap(a.state || 'working')}${a.model ? ' · ' + esc(a.model) : ''}${a.tools != null ? ' · ' + a.tools + ' tools' : ''}${a.parent ? ' · from ' + esc(a.parent) : ''}</div>${steps.length ? stepsHtml(steps.slice(0, 4)) : ''}${log.length ? `<div class="sa-log">${log.map(l => `<div>${esc(l)}</div>`).join('')}</div>` : ''}<div class="row" style="gap:5px;margin-top:6px">${dn ? '' : B(paused ? 'Resume' : 'Pause', 'agents:' + (paused ? 'resume' : 'pause') + ':' + id, 'mini')}${dn ? '' : B('Stop', 'agents:stop:' + id, 'mini')}${B('Open', 'agents:open:' + id, 'mini')}</div></div>`; };
+  const DEF = {
+    agent: { html: () => head('agent', 'Agent Activity', badge(st.state === 'idle' ? 'Idle' : cap(st.label), st.state === 'idle' ? 'var(--dim)' : st.color)) + `<div class="t c2">${esc(taskLine() || 'Nothing running. Ask Aegis anything or start voice.')}</div>` + (st.busy || pct() != null ? pbar(pct() ?? 12, 'var(--state)', st.busy) + `<div class="s">${[pct() != null ? pct() + '%' : '', st.task.tools != null ? st.task.tools + ' tools executed' : '', st.running > 1 ? st.running + ' agents' : ''].filter(Boolean).join(' · ') || 'Working…'}</div>` : '') },
+    research: { need: () => st.task.steps.length || W.research, html: () => { const r = W.research || {}, steps = r.steps ? r.steps.map(x => typeof x === 'string' ? { text: x, state: 'todo' } : x) : st.task.steps, done = steps.filter(x => x.state === 'done').length, p = r.progress ?? pct() ?? Math.round(done / (steps.length || 1) * 100), sz = local.size.research || 'l', name = r.name || (st.text.match(/^([A-Za-z ]{2,18}):/) || [])[1] || 'Current run';
+      if (sz === 's') return `<div class="row" data-act="size:research" style="cursor:pointer">${icon('agent')}<b class="t el grow">${esc(name)}</b><b style="color:var(--state)">${p}%</b></div>`;
+      return `<div data-act="size:research" style="cursor:pointer">${head('agent', name, badge(st.busy ? 'Running' : cap(st.label), st.busy ? 'var(--green)' : st.color))}</div><div class="s c2">${esc(r.text || taskLine())}</div>` + pbar(p, 'var(--state)', st.busy) + `<div class="row s"><span>${done} of ${steps.length} steps</span><span class="sp">${p}%</span></div>` + (sz === 'l' ? stepsHtml(steps) + `<div class="row" style="margin-top:8px">${B(st.state === 'paused' ? 'Resume' : 'Pause', 'research:' + (st.state === 'paused' ? 'resume' : 'pause'), 'wide')}${B('Open agent', 'research:open', 'wide')}</div>` : ''); } },
+    agents: { need: () => W.agents && W.agents.length, html: () => head('agent', 'Agents', badge(W.agents.filter(a => !['idle', 'done'].includes(a.state)).length + ' active', 'var(--blue)')) + `<div class="col" style="gap:8px">${W.agents.slice(0, 5).map((a, i) => `<div class="row"><span class="av${['idle', 'done'].includes(a.state) ? '' : ' bob'}">${pet(a.character, a.state, 26, 'ag' + i)}</span><div class="col grow"><b class="t el">${esc(a.name)}</b><span class="s el">${esc(a.task || '')}</span></div>${a.progress != null && a.state !== 'done' ? ring(a.progress, 26, SC(a.state)) : badge(cap(a.state || 'idle'), a.state === 'idle' ? 'var(--dim)' : SC(a.state))}</div>`).join('')}</div>` },
+    voice: { html: () => { const v = W.voice || {}, l = st.listening, sp = st.state === 'speaking'; return head('mic', 'Voice Pipeline', badge(l ? 'Listening' : sp ? 'Speaking' : 'Ready', l ? 'var(--red)' : sp ? 'var(--accent2)' : 'var(--green)')) + `<div class="row">${bars(22, l ? 'var(--red)' : 'var(--state)', 30)}<span class="sp"></span>${B(icon(l ? 'stop' : 'mic') + (l ? 'Stop' : 'Talk'), 'app:talk', 'p')}</div><div class="s" style="margin-top:6px">${esc([v.stt || 'Speech to text', v.lang, v.tts].filter(Boolean).join(' · '))}</div>`; } },
+    security: { need: () => W.security, html: () => head('shield', 'Security Monitor', W.security.pending ? badge('Review', 'var(--accent2)') : badge('Clear')) + `<div class="big">${String(W.security.pending || 0).padStart(2, '0')}</div><div class="s">${esc(W.security.label || 'Pending permission requests')}</div>` + (W.security.pending ? `<button class="link" data-act="security:open" style="margin-top:6px">Review agent actions →</button>` : '') },
+    model: { need: () => W.model, html: () => head('cloud', 'Model Provider', badge(W.model.status || 'Connected')) + `<div class="big" style="font-size:22px">${esc(W.model.provider || '')}</div><div class="s">${esc([W.model.model, W.model.mode].filter(Boolean).join(' · '))}</div><button class="link" data-act="model:open" style="margin-top:6px">Switch model →</button>` },
+    conversations: { need: () => W.conversations, html: () => head('chat', 'Conversations', `<span>ACTIVE</span>`) + `<div class="big">${String(W.conversations.active || 0).padStart(2, '0')}</div><div class="s">Active agent sessions</div><button class="link" data-act="conversations:open" style="margin-top:6px">View conversations →</button>` },
+    system: { need: () => W.system, html: () => { const s = W.system, h = s.hist.gpu.length ? s.hist.gpu : s.hist.cpu; return head('cpu', s.gpu != null ? 'GPU Monitor' : 'System', `<span>SYSTEM</span>`) + `<div class="row" style="align-items:flex-end"><div class="big">${Math.round(s.gpu ?? s.cpu ?? 0)}<small>%</small></div><div class="s sp" style="text-align:right">${s.gpu != null ? `CPU ${Math.round(s.cpu ?? 0)}% · ` : ''}RAM ${Math.round(s.mem ?? 0)}%${s.used != null ? `<br>${s.used} / ${s.total} GB` : ''}</div></div><div class="hb" style="--c:#8FB2D6">${h.map(v => `<i style="height:${Math.max(8, v)}%"></i>`).join('')}</div>`; } },
+    clock: { html: () => { const d = new Date(), s = W.status; return `<div class="row"><div class="big" style="font-size:32px">${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}<small>${String(d.getSeconds()).padStart(2, '0')}</small></div><div class="col sp" style="text-align:right"><b class="t">${d.toLocaleDateString([], { weekday: 'long' })}</b><span class="s">${d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span></div></div>` + (s ? `<div class="row s" style="margin-top:8px;gap:12px">${s.wifi ? `<span class="row" style="gap:4px">${icon('wifi')}${esc(String(s.wifi))}</span>` : ''}${s.bluetooth != null ? `<span class="row" style="gap:4px">${icon('bt')}${esc(String(s.bluetooth))}</span>` : ''}${s.battery != null ? `<span class="row sp" style="gap:4px;color:${s.battery < 20 ? 'var(--red)' : s.charging ? 'var(--green)' : 'inherit'}">${icon('batt')}${s.battery}%</span>` : ''}</div>` : ''); } },
+    schedule: { html: () => { const d = new Date(), y = d.getFullYear(), m = d.getMonth(), first = (new Date(y, m, 1).getDay() + 6) % 7, dim = new Date(y, m + 1, 0).getDate(), prev = new Date(y, m, 0).getDate(), sc = W.schedule; let c = 'MTWTFSS'.split('').map(x => `<b>${x}</b>`).join(''); for (let i = 0; i < 35; i++) { const n = i - first + 1; c += n < 1 ? `<span class="o">${prev + n}</span>` : n > dim ? `<span class="o">${n - dim}</span>` : `<span class="${n === d.getDate() ? 'td' : ''}">${n}</span>`; }
+      return head('cal', 'Today', sc && sc.more ? `<span>${sc.more} more</span>` : `<span>${d.toLocaleDateString([], { month: 'long' })}</span>`) + `<div style="display:grid;grid-template-columns:1fr 1.05fr;gap:10px;align-items:start"><div class="col" style="gap:5px">${sc && sc.items && sc.items.length ? sc.items.slice(0, 3).map(e => `<div class="ev" style="--c:${e.color || 'var(--blue)'}"><div class="col"><b class="t el" style="font-size:11.5px">${esc(e.title)}</b><span class="f">${esc(e.start || '')}${e.end ? ' – ' + esc(e.end) : ''}</span></div></div>`).join('') : '<span class="s">No events shared with Aegis yet.</span>'}</div><div class="cal">${c}</div></div>`; } },
+    alarms: { need: () => W.alarms && W.alarms.length, html: () => head('alarm', 'Alarms', `<span>${hm(new Date())}</span>`) + `<div class="col" style="gap:7px">${W.alarms.slice(0, 4).map(a => `<div class="row" style="opacity:${a.on ? 1 : .5}"><div class="col"><b style="font-size:15px;font-weight:600">${esc(a.time)}</b><span class="f">${esc(a.repeat || '')}</span></div><button class="tog sp${a.on ? ' on' : ''}" data-act="alarms:toggle:${esc(a.id)}"></button></div>`).join('')}</div>` },
+    weather: { html: () => { const d = WX.data; if (local.wxEdit || (!d && WX.status === 'need-loc')) return head('sun', 'Weather') + `<div class="s">Which city should Aegis show?</div><div class="wxin"><input id="wx-in" placeholder="City name" maxlength="60" data-enter="weather:save" value="${esc(WX.loc?.name || '')}"/>${B('Save', 'weather:save', 'p')}</div><div class="chips">${B('Use my location', 'weather:locate')}${B('Cancel', 'weather:cancel')}</div>`; if (!d) return head('sun', 'Weather') + `<div class="s">${WX.status === 'offline' ? 'Weather is offline.' : 'Loading…'}</div>` + (WX.status === 'offline' ? B('Retry', 'weather:retry') : '');
+      const hr = new Date().getHours(), mn = Math.min(...d.day.map(x => x.temp)), mx = Math.max(...d.day.map(x => x.temp)), col = t => t > 30 ? 'var(--red)' : t > 24 ? 'var(--amber)' : t > 16 ? 'var(--green)' : 'var(--blue)';
+      return `<div class="row" style="align-items:flex-start">${A.wxIcon(d.kind, d.night, 46)}<div class="col grow"><span class="s el">${esc(d.city || 'Weather')}${d.sample ? ' · sample' : ''}</span><div class="big">${deg(d.temp)}</div></div><div class="col" style="text-align:right"><b class="t">${esc(d.desc)}</b><span class="s">${d.hi != null ? `H ${deg(d.hi)} · L ${deg(d.lo)}` : ''}</span><span class="f">${d.feels != null ? 'Feels like ' + deg(d.feels) : ''}</span></div></div>` +
+        (d.day.length ? `<div class="hb" style="height:34px;gap:2px">${d.day.map(x => `<i style="height:${20 + 80 * (x.temp - mn) / (mx - mn || 1)}%;--c:${col(x.temp)};opacity:${x.h === hr ? 1 : x.h < hr ? .3 : .75}"></i>`).join('')}</div><div class="row f" style="justify-content:space-between;margin-top:2px"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>` : '') +
+        `<div class="mini">${[['UV', d.uv != null ? Math.round(d.uv) : null], ['Rain', d.rain != null ? d.rain + ' mm' : null], ['Sunset', d.sunset ? new Date(d.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null], ['Humidity', d.humidity != null ? Math.round(d.humidity) + '%' : null]].filter(x => x[1] != null).map(x => `<div><small>${x[0]}</small><b>${x[1]}</b></div>`).join('')}</div>` +
+        `<div class="row f" style="justify-content:space-between;margin-top:7px;padding-top:6px;border-top:1px solid var(--line)"><span class="row" style="gap:4px">${icon('pin')}${esc(d.city || WX.loc?.name || 'Location')}</span><button class="link f" data-act="weather:edit" style="color:var(--faint)">Change city</button></div>`; } },
+    media: { need: () => W.media?.available === true, html: () => { const m = W.media || {}, v = m.volume, has = m.title || m.artist; return `<div class="row"><div class="art"${m.art ? ` style="background-image:url('${esc(m.art)}')"` : ''}>${m.art ? '' : bars(5, '#fff', 20)}</div><div class="col grow"><span class="s el">${esc(m.artist || m.app || 'System playback')}</span><b class="t el" style="font-size:14px">${esc(has ? m.title || 'Playing' : 'Untitled media')}</b><div class="row" style="gap:4px;margin-top:3px">${B(icon('prev'), 'media:previous', 'ic')}${B(icon(m.playing ? 'pause' : 'play'), 'media:playPause', 'ic p')}${B(icon('next'), 'media:next', 'ic')}</div></div></div>` + (m.duration ? `<div class="row f" style="margin-top:9px"><span>${mmss(m.position || 0)}</span><div class="seek"><i style="width:${(m.position || 0) / m.duration * 100}%"></i></div><span>${mmss(m.duration)}</span></div>` : ''); } },
+    devices: { need: () => W.devices && W.devices.length, html: () => head('bt', 'Devices', `<span>${W.devices.filter(d => d.connected !== false).length} connected</span>`) + `<div class="row" style="justify-content:space-around">${W.devices.slice(0, 4).map(d => `<div class="col" style="justify-items:center;gap:4px;opacity:${d.connected === false ? .45 : 1}">${ring(d.battery ?? 0, 42, (d.battery ?? 100) < 20 ? 'var(--red)' : 'var(--violet)', rtext(d.battery != null ? d.battery + '%' : '–', 9))}<span class="s el" style="max-width:74px">${esc(d.name)}</span></div>`).join('')}</div>` },
+    health: { need: () => W.health, html: () => { const h = W.health, R = (ic, c, l, v) => v == null ? '' : `<div class="row"><span class="av" style="color:${c}">${icon(ic)}</span><div class="col"><span class="f">${l}</span><b style="font-size:15px;font-weight:600;color:${c}">${esc(String(v))}</b></div></div>`; return `<div class="col" style="gap:8px;grid-template-columns:1fr 1fr">${R('moon', 'var(--violet)', 'Sleep', h.sleep)}${R('walk', 'var(--green)', 'Steps', h.steps != null ? Number(h.steps).toLocaleString('en-US') : null)}${R('flame', 'var(--pink)', 'Calories', h.calories != null ? h.calories + ' kcal' : null)}${R('heart', 'var(--red)', 'Heart', h.heart != null ? h.heart + ' bpm' : null)}</div>`; } },
+    timer: { html: () => { const now = Date.now(), ts = local.timers; return head('timer', 'Timers', ts.length ? '' : '<span>Start one</span>') + (ts.length ? `<div class="col" style="gap:8px">${ts.map(t => { const left = t.paused != null ? t.paused : (t.end - now) / 1000; return `<div class="row">${ring(100 * left / t.total, 34, 'var(--amber)')}<div class="col"><span class="f">${esc(t.label)}</span><b class="big" style="font-size:20px;color:var(--amber)">${mmss(left)}</b></div><span class="sp"></span>${B(icon(t.paused != null ? 'play' : 'pause'), 'timer:pause:' + t.id, 'ic')}${B('+1', 'timer:add:' + t.id, 'ic')}${B(icon('x'), 'timer:del:' + t.id, 'ic')}</div>`; }).join('')}</div>` : '') + `<div class="chips">${[1, 5, 15, 25].map(m => B(`<b>+</b>${m} min`, 'timer:start:' + m)).join('')}</div>`; } },
+    market: { need: () => W.market && W.market.length, html: () => W.market.slice(0, 2).map(m => { const up = (m.change || 0) >= 0, c = up ? 'var(--amber)' : 'var(--red)'; return `<div class="row"><span class="av" style="color:${c}">${esc(String(m.symbol || '').slice(0, 3))}</span><div class="col"><b class="t">${esc(m.symbol || '')}</b><span class="f">${esc(m.name || '')}</span></div><span class="sp s" style="color:${c}">${up ? '▲' : '▼'} ${Math.abs(m.change || 0).toFixed(2)}%</span></div><div class="big" style="margin-top:6px">${money(m.price, m.currency || '')}</div>${spark(m.points, 280, 44, c)}`; }).join('<div style="height:10px"></div>') },
+    payment: { need: () => W.payment, html: () => { const p = W.payment; return `<div class="row" style="align-items:flex-start"><span class="av" style="border-radius:9px;width:40px;color:var(--accent2)">${icon('card')}</span><div class="col"><span class="f">${p.last4 ? '•••• ' + esc(p.last4) : 'Spending'}</span></div><div class="col sp" style="text-align:right"><span class="f">${esc(p.month || '')}</span><div class="big">${money(p.total, p.currency || '')}</div></div></div>` + (p.latest ? `<div class="ev" style="margin-top:8px;--c:var(--accent)"><div class="col grow"><span class="f">Latest</span><b class="t el">${esc(p.latest.name)}</b></div><b class="t">${esc(p.currency || '')}${Number(p.latest.amount).toFixed(2)}</b></div>` : ''); } },
+    tracking: { need: () => W.tracking, html: () => { const t = W.tracking, n = Math.max(2, t.stops || 4), p = t.progress || 0; return `<div class="row"><b class="t" style="color:var(--violet)">${esc(t.status || t.title || 'Tracking')}</b><span class="sp s" style="color:var(--violet)">${t.eta ? 'ETA ' + esc(t.eta) : ''}</span></div><div class="trk"><i style="width:${p}%"></i>${Array.from({ length: n }, (_, i) => `<em class="${i / (n - 1) * 100 <= p ? 'on' : ''}" style="left:${i / (n - 1) * 100}%"></em>`).join('')}</div><div class="row"><span class="av">${icon('box')}</span><div class="col grow"><b class="t el">${esc(t.title || '')}</b><span class="f">${esc(t.by || '')}</span></div>${B('Details', 'tracking:open')}</div>`; } },
+    navigation: { need: () => W.navigation, html: () => { const n = W.navigation; return head('nav', 'Navigation', n.eta ? `<span>${esc(n.eta)}</span>` : '') + `<div class="steps" style="margin:0"><div><i></i><span class="el">${esc(n.destination || 'Destination')}</span></div><div class="now" style="font-weight:650"><i style="animation:none;border-color:var(--accent);background:var(--accent)"></i><span class="el">${esc(n.next || '')}</span></div><div><i></i><span>${esc(n.distance || '')}</span></div></div>`; } },
+    meeting: { need: () => W.meeting, html: () => { const m = W.meeting, mins = Math.round((new Date(m.start) - Date.now()) / 60000); return head('video', 'Meeting', isNaN(mins) ? '' : badge(mins > 0 ? `in ${mins} min` : mins > -60 ? 'Now' : 'Ended', mins > 5 ? 'var(--blue)' : 'var(--accent2)')) + `<div class="row"><div class="col grow"><b class="t el" style="font-size:14px">${esc(m.title || '')}</b><span class="s el">${esc([m.people, m.app].filter(Boolean).join(' · '))}</span></div>${B(icon('video') + 'Join', 'meeting:join', 'p')}</div>`; } },
+    call: { need: () => W.call, html: () => { const c = W.call; return `<div class="row"><span class="av" style="background:var(--accent);color:#fff">${esc(String(c.name || '?')[0])}</span><div class="col grow"><b class="t el">${esc(c.name || '')}</b><span class="f">${esc(c.agent || c.status || '')} · ${mmss(c.duration ?? (Date.now() - (c.startedAt || Date.now())) / 1000)}</span></div>${bars(7, 'var(--green)', 18)}<button class="btn ic" style="background:var(--red);color:#fff" data-act="call:hangup">${icon('phone')}</button></div>`; } },
+    assistant: { html: () => { const you = st.history.find(h => /^you:/i.test(h.text)), last = st.text || (st.history[0] && st.history[0].text) || '', r = W.replies || []; return head('agent', 'Assistant', `<span>${hm(new Date())}</span>`) + `<div class="row" style="align-items:flex-start"><div class="col grow">${you && you.text !== last ? `<span class="s el">${esc(you.text)}</span>` : ''}<div class="t" style="font-size:14.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(last || 'Hey, what should we do next?')}</div></div><span class="orb"></span></div><div class="chips">${r.slice(0, 3).map(x => `<button class="btn" data-act="ask:send:${esc(x)}">${esc(x)}</button>`).join('')}${B(icon(st.listening ? 'stop' : 'mic'), 'app:talk', 'ic p')}</div>`; } },
+    ask: { stable: true, html: () => `<div class="ask">${icon('search')}<input id="ask-in" placeholder="Ask anything…" data-enter="ask:submit" maxlength="400"/>${B(icon('mic'), 'app:talk', 'ic')}${B(icon('send'), 'ask:submit', 'ic p')}</div><div class="chips">${[['/write', 'a summary of…'], ['/code', 'explain and fix…'], ['@', 'mention a tab or file']].map(c => `<button class="btn" data-act="ask:fill:${c[0]} "><b>${c[0]}</b>${c[1]}</button>`).join('')}</div>` },
+    live: { need: () => true, html: () => { const items = liveList(); return items.length ? `<div class="col" style="gap:7px">${items.map(a => { const c = COL[a.color] || a.color || 'var(--green)', p = a.progress; return `<div class="lv" style="--c:${c}" data-act="live:open:${esc(a.id || a.title || '')}"><span class="lvi">${a.glyph || !a.icon ? esc(a.glyph || '•') : icon(a.icon)}</span><div class="col grow" style="min-width:0"><div class="row"><b class="t el grow">${esc(a.title || '')}</b><b class="lvv">${esc(a.value || '')}</b></div>${a.from || a.to ? `<div class="row lvr"><span>${esc(a.from || '')}</span><div class="trk grow"><i style="width:${p || 0}%"></i></div><span>${esc(a.to || '')}</span></div>` : p != null ? `<div class="pbar"><i style="width:${p}%;background:${c}"></i></div>` : ''}${a.sub ? `<span class="f el">${esc(a.sub)}</span>` : ''}</div></div>`; }).join('')}</div>` : head('activity', 'Live activity', badge(st.busy ? 'Running' : 'Ready', st.busy ? 'var(--green)' : 'var(--dim)')) + `<div class="lv"><span class="lvi">${icon(st.busy ? 'agent' : 'check')}</span><div class="col grow"><b class="t">${esc(st.busy ? taskLine() || 'Aegis is working' : 'No active desktop task')}</b><span class="s">${esc(st.busy ? 'Task and tool updates will appear here.' : 'Task progress appears here while Aegis is working.')}</span></div></div>`; } },
+    subagents: { need: () => true, html: () => { const all = W.agents || [], act = A.activeAgents(), list = all.slice().sort((x, y) => (['idle', 'done'].includes(x.state) ? 1 : 0) - (['idle', 'done'].includes(y.state) ? 1 : 0)).slice(0, 6);
+      return `<div class="sa-lead"><span class="av">${pet(st.character, st.state, 30, 'salead')}</span><div class="col grow" style="min-width:0"><b class="t el">Aegis <span class="f">· lead</span></b><span class="s el">${esc(taskLine() || (act.length ? 'Coordinating subagents' : 'Ready'))}</span></div>${badge(act.length ? act.length + ' running' : all.length ? 'All done' : st.running + ' running', act.length ? 'var(--blue)' : 'var(--green)')}</div>` +
+        (list.length ? `<div class="sa-tree">${list.map((a, i) => { const dn = a.state === 'done', idle = ['idle', 'paused'].includes(a.state), col = SC(a.state); return `<div class="sa${dn ? ' dn' : ''}${selAgent === String(a.id || a.name) ? ' sel' : ''}" data-act="agents:select:${esc(a.id || a.name)}"><span class="av${dn || idle ? '' : ' bob'}">${pet(a.character, a.state, 24, 'sa' + i)}</span><div class="col grow" style="min-width:0"><div class="row"><b class="t el grow">${esc(a.name)}</b><span class="f" style="color:${col}">${dn ? '✓ done' : a.progress != null ? Math.round(a.progress) + '%' : cap(a.state || '')}</span></div><span class="s el">${esc(a.task || '')}</span>${!dn && !idle ? `<div class="pbar${a.progress == null ? ' run' : ''}"><i style="width:${a.progress ?? 30}%;background:${col}"></i></div>` : ''}${selAgent === String(a.id || a.name) ? agentDetail(a) : ''}</div></div>`; }).join('')}</div>` + (all.length > 6 ? `<div class="f" style="padding-left:34px">+ ${all.length - 6} more</div>` : '') : `<div class="s" style="padding:6px 0 0 4px">No worker agents are running. Multi-agent task progress will appear here when the orchestrator delegates work.</div>`); } },
+    clipboard: { need: () => W.clipboard?.enabled, html: () => { const items = W.clipboard?.items || []; return head('files', 'Clipboard history', badge('Local only', 'var(--green)')) + (items.length ? `<div class="col" style="gap:6px">${items.slice(0, 4).map((item, i) => `<div class="row"><span class="t c2 grow">${esc(item.text)}</span>${B('Copy', 'clipboard:copy:' + i, 'mini')}</div>`).join('')}</div>` : `<div class="s">Copy text to save it here. Sensitive-looking text is skipped.</div>`); } },
+    coding: { need: () => W.codingAgents?.enabled, html: () => { const agents = W.codingAgents?.agents || []; return head('agent', 'Coding apps', badge('Opt-in', 'var(--dim)')) + (agents.length ? `<div class="col" style="gap:6px">${agents.map(agent => `<div class="row"><b class="t grow">${esc(agent.name)}</b>${badge('Open', 'var(--green)')}</div><span class="s">${esc(agent.detail)}</span>`).join('')}</div>` : `<div class="s">No supported coding app process is currently detected.</div>`); } },
+    notes: { html: () => head('bell', 'Activity', notes.length ? `<button class="link" data-act="notes:clear">Clear</button>` : '') + (notes.length ? `<div class="col" style="gap:8px">${notes.slice(0, 4).map(noteHtml).join('')}</div>` : `<div class="s">Finished tasks and things that need you land here.</div>`) },
+    notepad: { html: () => { const list = local.notepad; return head('chat', 'Notes', list.length ? `<button class="link" data-act="notepad:clear">Clear</button>` : `<span>${list.length}</span>`) + `<div class="tin"><b>+</b><input id="np-in" placeholder="Write a note, press Enter" maxlength="400" data-enter="notepad:add"/></div>` + (list.length ? `<div class="col" style="gap:6px;margin-top:6px">${list.slice(0, 6).map(n => `<div class="row"><span class="t c2 grow el">${esc(n.text)}</span><span class="f">${hm(new Date(n.at))}</span><button class="btn ic" data-act="notepad:del:${esc(n.id)}" title="Delete note">${icon('x')}</button></div>`).join('')}</div>` : `<div class="s" style="margin-top:4px">No notes yet. Type above and press Enter — notes stay on this PC.</div>`); } },
+    agentrun: { stable: true, html: () => head('agent', 'Give the agent a job', st.busy ? badge('Working', 'var(--blue)') : `<span>asks the app</span>`) + `<div class="tin"><b>›</b><input id="ag-in" placeholder="e.g. summarise my Downloads folder" maxlength="300" data-enter="agentrun:go"/></div><div class="chips" style="margin-top:6px">${B(icon('send') + 'Run task', 'agentrun:go', 'p')}${B('Open app', 'agentrun:open')}</div>` },
+    harness: { html: () => { const h = W.harness, s = (h && h.status) || {}, r = s.runtimes || {}, servers = Object.entries((h && h.servers) || {});
+      if (!h) return head('gear', 'Harness', `<span>tools</span>`) + `<div class="s">Reading the native harness…</div>`;
+      if (!h.status) return head('gear', 'Harness', badge('Offline', 'var(--red)')) + `<div class="s">${esc(h.error || 'The Aegis host is not answering, so the harness cannot report its tools.')}</div>` + `<div class="row" style="margin-top:6px">${B('Retry', 'harness:refresh', 'mini')}</div>`;
+      return head('gear', 'Harness', badge(s.running ? 'Running' : 'Stopped', s.running ? 'var(--green)' : 'var(--red)')) + `<div class="s">${esc(s.detail || 'Native execution engine')}</div>` + `<div class="chips" style="margin-top:6px">${(r.tools || []).map(t => `<span class="badge" style="--c:var(--blue)">${esc(t)}</span>`).join('')}</div>` + `<div class="f" style="margin-top:6px">${esc([r.node ? 'Node ' + r.node : '', r.python ? 'Python ' + r.python : '', r.shell].filter(Boolean).join(' · '))}</div>` + (servers.length ? `<div class="col" style="gap:6px;margin-top:6px">${servers.map(([name, cfg]) => `<div class="row"><b class="t el grow">${esc(name)}</b><button class="tog${cfg && cfg.disabled ? '' : ' on'}" data-act="harness:toggle:${esc(name)}" title="Enable or disable this tool server"></button></div>`).join('')}</div>` : `<div class="f" style="margin-top:6px">No MCP tool servers installed. Add one in the app under Tools.</div>`) + `<div class="row" style="margin-top:6px;gap:6px">${B('Refresh', 'harness:refresh', 'mini')}${B('Open tools', 'harness:open', 'mini')}</div>`; } },
+  };
+  const NK = { done: ['check', 'var(--green)'], error: ['x', 'var(--red)'], ask: ['shield', 'var(--amber)'], info: ['bell', 'var(--accent2)'] };
+  function noteHtml(n, full) { const k = NK[n.kind] || NK.info; return `<div class="note" style="--c:${k[1]}"><span class="ni">${icon(k[0])}</span><div class="col grow"><div class="row"><b class="t el grow">${esc(n.title)}</b><span class="f">${hm(new Date(n.at))}</span></div>${n.body ? `<span class="s ${full ? '' : 'c2'}">${esc(n.body)}</span>` : ''}${full && n.steps && n.steps.length ? stepsHtml(n.steps.slice(0, 4)) : !full && n.steps && n.steps.length ? `<span class="f">${n.steps.filter(x => x.state === 'done').length} of ${n.steps.length} steps done</span>` : ''}${typeof n.progress === 'number' ? pbar(n.progress, k[1]) : ''}${n.actions && n.actions.length ? `<div class="row" style="margin-top:5px;gap:6px">${n.actions.slice(0, 3).map((a, i) => `<button class="btn${i ? '' : ' p'}" data-act="notes:action:${esc(n.id)}|${esc(typeof a === 'string' ? a : a.id || a.label)}">${esc(typeof a === 'string' ? a : a.label)}</button>`).join('')}</div>` : ''}</div></div>`; }
+
+  // ── local behaviour (works without the host) ──
+  const saveT = () => store.set('aegis.timers', local.timers);
+  const LOCAL = {
+    agents: (a, v) => { if (a === 'select') { selAgent = selAgent === v ? null : v; return; } act('agents', a, v);          // pause | resume | stop | open → host
+      if (A.PREVIEW) { if (a === 'pause') A.agentEvent('update', { id: v, state: 'paused' }); else if (a === 'resume') A.agentEvent('update', { id: v, state: 'working' }); else if (a === 'stop') A.agentEvent('remove', { id: v }); } },
+    size: id => { const o = ['s', 'm', 'l'], c = local.size[id] || 'l'; local.size[id] = o[(o.indexOf(c) + 1) % 3]; store.set('aegis.w.size', local.size); },
+    weather: (a, v, el) => { if (a === 'edit') local.wxEdit = true; else if (a === 'cancel') local.wxEdit = false; else if (a === 'locate') { if (!navigator.geolocation) return A.notify({ kind: 'error', title: 'Location unavailable', body: 'This device does not expose a location. Type a city name instead.' }); navigator.geolocation.getCurrentPosition(p => { A.WX.loc = { name: 'My location', lat: p.coords.latitude, lon: p.coords.longitude }; A.store.set('aegis.weather.loc', A.WX.loc); A.api?.action?.('weather-location', A.WX.loc); if (A.WX.data) A.WX.data.source = ''; local.wxEdit = false; void A.wxFetch(); }, () => A.notify({ kind: 'error', title: 'Location unavailable', body: 'Allow location access, or type a city name.' }), { timeout: 8000 }); } else if (a === 'retry') A.wxFetch(); else if (a === 'save') { const i = el.closest('.w').querySelector('#wx-in'), name = i && i.value; local.wxEdit = false; if (name) A.wxSearch(name).then(ok => { if (!ok) { local.wxEdit = true; refreshAll(); } }); } },
+    timer: (a, v) => { const now = Date.now(), t = local.timers.find(x => x.id === v); if (a === 'start') local.timers.push({ id: 't' + now, label: v + ' min timer', total: v * 60, end: now + v * 60000 }); else if (!t) return; else if (a === 'del') local.timers = local.timers.filter(x => x !== t); else if (a === 'add') { t.total += 60; if (t.paused != null) t.paused += 60; else t.end += 60000; } else if (a === 'pause') { if (t.paused != null) { t.end = now + t.paused * 1000; delete t.paused; } else t.paused = (t.end - now) / 1000; } local.timers = local.timers.slice(-3); saveT(); },
+    alarms: (a, v) => { const x = (W.alarms || []).find(q => String(q.id) === v); if (x) { x.on = !x.on; act('alarms', 'toggle', { id: x.id, on: x.on }); } },
+    media: (a, v, el, e) => { if (a === 'volume') { const r = el.getBoundingClientRect(); act('media', 'volume', Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 100)); } else act('media', a); },
+    ask: (a, v, el) => { const i = document.getElementById('ask-in'); if (a === 'fill' && i) { i.value = v; i.focus(); } else if (a === 'send') act('ask', 'send', v); else if (a === 'submit' && i && i.value.trim()) { act('ask', 'send', i.value.trim()); A.update({ text: 'You: ' + i.value.trim(), keepState: true }); i.value = ''; } },
+    notes: (a, v) => { if (a === 'clear') notes.length = 0; else if (a === 'action') { const [id, choice] = v.split('|'), i = notes.findIndex(n => n.id === id); act('notification', choice, { id }); if (i >= 0) notes.splice(i, 1); A.emit('notify-clear', id); } },
+    notepad: (a, v) => { if (a === 'add') { const i = document.getElementById('np-in'), text = i && i.value.trim(); if (!text) return; local.notepad = [{ id: 'n' + Date.now().toString(36), text, at: Date.now() }, ...local.notepad].slice(0, 50); if (i) i.value = ''; } else if (a === 'del') local.notepad = local.notepad.filter(n => n.id !== v); else if (a === 'clear') local.notepad = []; store.set('aegis.notepad', local.notepad); },
+    agentrun: (a, v, el) => { if (a === 'open') { A.act('app', 'open'); return; } const input = document.getElementById('ag-in') || (el && el.closest && el.closest('.w') && el.closest('.w').querySelector('#ag-in')), text = input && input.value.trim(); if (!text) { A.notify({ kind: 'info', title: 'Nothing to run', body: 'Type the job you want the agent to do first.' }); return; } A.act('ask', 'send', text); if (input) input.value = ''; A.notify({ kind: 'info', title: 'Sent to Aegis', body: text }); },
+    harness: (a, v) => { if (a === 'open') { A.act('app', 'open'); return; } const h = A.W.harness || {}; if (a === 'toggle') { const cur = (h.servers || {})[v]; void A.api?.setHarnessPlugin?.(v, !(cur && cur.disabled)).then(r => { if (r && r.servers) A.setData({ harness: { ...h, servers: r.servers } }); }).catch(() => {}); return; } void A.api?.getHarness?.().then(next => A.setData({ harness: next })).catch(() => {}); },
+    clipboard: (a, v) => { if (a === 'copy') act('clipboard-copy', 'copy', { index: Number(v) }); },
+    board: (a, v) => { const h = store.get('aegis.w.hidden', []); if (a === 'hide' && !h.includes(v)) h.push(v); if (a === 'show') h.splice(h.indexOf(v), 1); store.set('aegis.w.hidden', h); },
+  };
+  on('tick', () => { const now = Date.now(); for (const t of local.timers.slice()) if (t.paused == null && t.end <= now) { local.timers = local.timers.filter(x => x !== t); saveT(); A.notify({ kind: 'info', title: 'Timer finished', body: t.label }); } });
+
+  const mounts = [];
+  // Patch the DOM in place instead of replacing it: running animations, CSS transitions and hover states survive an update (no flicker when progress ticks).
+  const TPL = document.createElement('template');
+  function morph(a, b) { if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) return a.replaceWith(b.cloneNode(true)); if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; } if (a.isEqualNode(b)) return;
+    for (const at of [...a.attributes]) if (!b.hasAttribute(at.name)) a.removeAttribute(at.name); for (const at of b.attributes) if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+    if (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') { if (a.value !== b.value) a.value = b.value; return; } if (a.namespaceURI !== 'http://www.w3.org/1999/xhtml') { a.innerHTML = b.innerHTML; return; } morphKids(a, b); }
+  function morphKids(a, b) { const x = [...a.childNodes], y = [...b.childNodes]; for (let i = 0; i < y.length; i++) { if (i < x.length) morph(x[i], y[i]); else a.appendChild(y[i].cloneNode(true)); } for (let i = x.length - 1; i >= y.length; i--) x[i].remove(); }
+  function refreshAll() { for (const m of mounts) m.refresh(); }
+  /** mount(container, ids): creates one <section class="w"> per id and keeps it up to date. */
+  function mount(el, ids) {
+    const secs = ids.filter(id => DEF[id]).map(id => { const s = document.createElement('section'); s.className = 'w w-' + id; s.dataset.w = id; el.appendChild(s); return { id, s, last: null }; });
+    const refresh = () => { if (!el.isConnected || (!el.getClientRects().length && secs.some(c => c.last != null))) { secs.forEach(c => c.dirty = true); return; }   // not on screen: do no work, catch up when shown
+      const hidden = store.get('aegis.w.hidden', []); for (const c of secs) { const d = DEF[c.id], show = (!d.need || d.need()) && !hidden.includes(c.id); c.s.style.display = show ? '' : 'none'; if (!show) continue; if (!c.s.getClientRects().length) { c.dirty = true; continue; } c.dirty = false; if (c.s.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') continue; const h = d.html() + `<button class="wh" data-act="board:hide:${c.id}" title="Hide this widget">${icon('x')}</button>`; if (h !== c.last) { if (c.last == null) c.s.innerHTML = h; else { TPL.innerHTML = h; morphKids(c.s, TPL.content); } c.last = h; } } el.dispatchEvent(new CustomEvent('cards')); };
+    el.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b || !el.contains(b)) return; const [id, a, ...r] = b.dataset.act.split(':'), v = r.join(':'); e.stopPropagation(); if (LOCAL[id]) LOCAL[id](id === 'size' ? a : a, v, b, e); else act(id, a, v); refreshAll(); });
+    el.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter) { const [id, a] = e.target.dataset.enter.split(':'); LOCAL[id] && LOCAL[id](a, '', e.target, e); e.target.blur(); refreshAll(); } });
+    el.addEventListener('focusin', e => { if (e.target.tagName === 'INPUT') { A.setHover(true); A.api?.action?.('want-focus', true); } });
+    el.addEventListener('focusout', e => { if (e.target.tagName === 'INPUT') { A.api?.action?.('want-focus', false); setTimeout(refresh, 0); } });
+    const m = { refresh, ids }; mounts.push(m); refresh();
+    if (window.IntersectionObserver) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting) && secs.some(c => c.dirty)) refresh(); }); secs.forEach(c => io.observe(c.s)); io.observe(el); }
+    return m;
+  }
+  let pend = false; const soon = () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; refreshAll(); }); };
+  ['change', 'data', 'tick', 'weather', 'notify'].forEach(n => on(n, soon));
+  return { pet, selectAgent: id => { selAgent = id == null ? null : String(id); refreshAll(); }, setLiveQuery: q => { liveQ = q ? new RegExp(q, 'i') : null; }, mount, noteHtml, DEF, ALL: Object.keys(DEF), refreshAll };
+})();
+
+(() => {
+  const { $, st, on, api, setHover } = A, stage = $('#stage'), wrap = $('#mascot-wrap'), statusEl = $('#status'), toasts = $('#toasts');
+  const fit = () => Math.round(Math.max(64, Math.min(116, stage.getBoundingClientRect().width * 0.44)));
+  const pet = A.mascot($('#mascot-img'), fit(), { shadow: false, lively: true });
+  const size = () => { const s = fit(); wrap.style.setProperty('--sz', s + 'px'); pet.resize(s); }; size(); addEventListener('resize', size);
+  // Tell the shell how much room the content needs (optional: lets it keep the window tight).
+  new ResizeObserver(() => { const b = $('#below').getBoundingClientRect(); api?.action?.('overlay-size', { width: 280, height: Math.ceil(b.bottom + 8) }); }).observe($('#below'));
+  const sparks = (n = 8) => { for (let i = 0; i < n; i++) { const s = document.createElement('i'), a = Math.PI * 2 * i / n + Math.random() * 0.5, d = 46 + Math.random() * 22; s.className = 'spark'; s.style.cssText = `--x:${Math.cos(a) * d}px;--y:${Math.sin(a) * d}px;--c:${['#F5B544', '#4ADE80', '#E8714F', '#5B9BF5'][i % 4]}`; wrap.appendChild(s); setTimeout(() => s.remove(), 820); } };
+  // status pill: types the message out; never covers the character
+  let typeT = null, clearT = null, shown = '';
+  const type = text => { clearInterval(typeT); if (text === shown) return; shown = text; statusEl.textContent = ''; if (!text) return; let i = 0; const step = Math.max(1, Math.round(text.length / 45)); typeT = setInterval(() => { i += step; statusEl.textContent = text.slice(0, i); if (i >= text.length) clearInterval(typeT); }, 22); };
+  on('change', s => {
+    stage.classList.toggle('busy', s.busy); $('#bubble').classList.toggle('quiet', s.state === 'idle' && !s.text); $('#state-t').textContent = s.label; clearTimeout(clearT);
+    const sticky = s.busy || s.state === 'listening' || s.state === 'speaking'; type(s.text);
+    if (!sticky && s.text) clearT = setTimeout(() => type(''), Math.min(9000, 3500 + s.text.length * 50));
+    const p = s.task.progress, steps = s.task.steps, done = steps.filter(x => x.state === 'done').length;
+    $('#prog').innerHTML = s.busy && (p != null || steps.length) ? `<div class="pbar run"><i style="width:${p ?? Math.round(done / steps.length * 100)}%"></i></div><div class="f" style="text-align:center">${steps.length ? `Step ${Math.min(steps.length, done + 1)} of ${steps.length}` : ''}${p != null ? (steps.length ? ' · ' : '') + p + '%' : ''}</div>` : '';
+  });
+  on('state', s => { if (s.state === 'done' || s.state === 'celebrate') { pet.hop(1.3); sparks(10); } else if (s.state === 'listening' || s.state === 'error') pet.hop(0.7); });
+  const wx = () => { const d = A.WX.data; $('#wxm').textContent = ''; };
+  on('weather', wx); on('tick', wx); on('change', wx);
+  // notifications: what finished, what needs you. Newest on top, at most two.
+  const drop = el => { if (!el || el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 300); };
+  on('notify', n => { pet.hop(1); if (n.kind !== 'done') pet.react('notification'); const el = document.createElement('div'); el.className = 'toast'; el.dataset.id = n.id; el.innerHTML = Cards.noteHtml(n, true); toasts.prepend(el); while (toasts.children.length > 2) toasts.lastChild.remove(); setTimeout(() => drop(el), n.kind === 'ask' ? 20000 : 8000); });
+  toasts.addEventListener('click', e => { const t = e.target.closest('.toast'), b = e.target.closest('[data-act]'); if (b) { const [id, choice] = (b.dataset.act.split(':')[2] || '').split('|'); A.act('notification', choice, { id }); const i = A.notes.findIndex(x => x.id === id); if (i >= 0) A.notes.splice(i, 1); } else api?.show?.(); drop(t); });
+
+  // hover: wave hello. No scaling, no buttons.
+  let lastActive = performance.now(), asleep = false;
+  const wake = () => { lastActive = performance.now(); if (asleep) { asleep = false; pet.react('hello'); } };
+  stage.addEventListener('mouseenter', () => { setHover(true); stage.classList.add('hover'); if (asleep) wake(); else if (st.state === 'idle') pet.react('hello'); lastActive = performance.now(); });
+  stage.addEventListener('mouseleave', () => { setHover(false); stage.classList.remove('hover'); });
+  document.addEventListener('mouseleave', () => { setHover(false); stage.classList.remove('hover'); }); setHover(false);
+  on('change', () => { lastActive = performance.now(); asleep = false; });
+  setInterval(() => { if (!asleep && st.state === 'idle' && performance.now() - lastActive > 150000) { asleep = true; pet.react('sleeping'); } else if (asleep) pet.play('sleeping'); }, 4000);
+  wrap.addEventListener('contextmenu', e => { e.preventDefault(); api?.action?.('overlay-menu', { x: e.screenX, y: e.screenY }); });   // host shows a native menu (hide mascot, widgets, notch…)
+  // click opens Aegis, double-click talks, drag moves the window. Screen coordinates + pointer capture keep the drag exact on scaled Windows displays.
+  let drag = null, wasDragged = false;
+  wrap.addEventListener('click', () => { if (wasDragged) return; wake(); pet.hop(1); sparks(6); setHover(true); A.toggleVoice(); });      // click the mascot → listen
+  wrap.addEventListener('dblclick', () => api?.show?.());
+  wrap.addEventListener('pointerdown', e => { if (e.button !== 0) return; drag = { x: e.screenX, y: e.screenY, moved: false }; wasDragged = false; try { wrap.setPointerCapture(e.pointerId); } catch {} });
+  wrap.addEventListener('pointermove', e => { if (!drag) return; const dx = e.screenX - drag.x, dy = e.screenY - drag.y; if (!drag.moved && Math.hypot(dx, dy) < 5) return; if (!drag.moved) { drag.moved = true; wasDragged = true; pet.react('confused'); } if (dx || dy) { drag.x = e.screenX; drag.y = e.screenY; api?.action?.('move-overlay', { dx, dy }); pet.sway(dx / 14); } });
+  const end = e => { if (!drag) return; if (drag.moved) pet.hop(0.8); drag = null; try { wrap.releasePointerCapture(e.pointerId); } catch {} setTimeout(() => { wasDragged = false; }, 220); };
+  wrap.addEventListener('pointerup', end); wrap.addEventListener('pointercancel', end);
+  // Windows click-through fallback: only the character and the things below it take the mouse.
+  document.addEventListener('mousemove', e => { const t = document.elementFromPoint(e.clientX, e.clientY), over = !!(t && t.closest('.mascot-wrap,.below')); setHover(over); stage.classList.toggle('hover', over); });
+  on('spawn', () => { pet.hop(0.9); pet.fidget('stretch'); }); on('agent-done', () => pet.fidget('nod'));   // subagents themselves are shown in the notch, not here
+  // Voice commands are normally run by the notch page. Load this page with ?commands=1 if the notch is switched off.
+  if (new URLSearchParams(location.search).get('commands') === '1') on('heard', h => { const c = h.intent && h.intent.cmd; if (c === 'open') api?.show?.(); else if (c === 'widgets') (api?.showWidgets || api?.toggleWidgets)?.(); else if (c === 'widgets-hide') api?.hideWidgets?.(); else if (c === 'notch') api?.toggleNotch?.(); });
+  A.start();
+})();
+    </script>
+  
+<script>
+/* Pointer routing for a transparent, click-through surface window: stay
+   click-through over empty space, become interactive over real controls.
+   Without this the notch/widgets buttons and the mascot were unclickable. */
+(() => {
+  let interactive = false;
+  const sample = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const isControl = !!el && el !== document.body && el !== document.documentElement;
+    if (isControl !== interactive) {
+      interactive = isControl;
+      (window.aegis && window.aegis.setClickThrough)
+        ? window.aegis.setClickThrough(!isControl)
+        : undefined;
+    }
+  };
+  document.addEventListener('mousemove', (e) => sample(e.clientX, e.clientY), true);
+  document.addEventListener('mouseleave', () => {
+    if (interactive) {
+      interactive = false;
+      if (window.aegis && window.aegis.setClickThrough) window.aegis.setClickThrough(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

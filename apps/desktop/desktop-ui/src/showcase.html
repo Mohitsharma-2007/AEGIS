@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Aegis desktop surfaces — showcase</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0b0b0d;color:#F6F3EF;font:13px "Segoe UI Variable","Segoe UI",system-ui,sans-serif}
+.top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.top h1{font-size:14px;margin:0 10px 0 0;font-weight:650}.top span{color:#8d8983;font-size:11px;margin:0 4px 0 8px}
+.top button{height:28px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,255,255,.14);background:#17171b;color:#F6F3EF;font:inherit;font-size:12px;cursor:pointer}
+.top button:hover{background:#24242a}.top button.on{background:#E8714F;border-color:#E8714F}
+.fitw{padding:14px;overflow:hidden}
+.desk{position:relative;width:1366px;height:768px;transform-origin:0 0;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+ background:radial-gradient(900px 600px at 20% 10%,#274a7a,transparent 60%),radial-gradient(900px 700px at 85% 90%,#5b2a52,transparent 60%),linear-gradient(135deg,#10203a,#1a1230)}
+iframe{position:absolute;border:0;background:transparent;color-scheme:dark}
+#f-annot{left:0;top:0;width:1366px;height:720px;z-index:0;display:none}.desk.an #f-annot{display:block}.desk.an #f-overlay,.desk.an #f-tray{display:none}
+#f-notch{left:343px;top:0;width:680px;height:470px;z-index:3}
+#f-overlay{right:330px;top:330px;width:290px;height:330px;z-index:2}
+#f-tray{right:16px;bottom:48px;width:340px;height:250px;z-index:4}
+#f-widgets{left:30px;top:70px;width:960px;height:640px;z-index:1;display:none}
+.desk.w #f-widgets{display:block}.desk.w #f-notch{pointer-events:none}
+
+.bar{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(24,24,30,.82);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid rgba(255,255,255,.08)}
+.bar i{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.14)}.bar i:first-child{background:linear-gradient(135deg,#4cc2ff,#2b7fff)}
+.tray{position:absolute;right:14px;bottom:0;height:48px;display:flex;align-items:center;gap:11px;font-size:11px;color:#ddd}
+.tray .ic{width:18px;height:18px;border-radius:50% 50% 45% 45%;background:#D06A51;box-shadow:0 0 0 0 #E8714F;animation:tp 2s ease-out infinite}
+@keyframes tp{0%{box-shadow:0 0 0 0 rgba(232,113,79,.7)}100%{box-shadow:0 0 0 9px rgba(232,113,79,0)}}
+.lab{position:absolute;font-size:10.5px;color:rgba(255,255,255,.55);letter-spacing:.04em;text-transform:uppercase}
+</style></head><body>
+<div class="top"><h1>Aegis desktop surfaces</h1>
+<span>State</span><button data-k="Idle">Idle</button><button data-k="Listen">Listen</button><button data-k="Think">Think</button><button data-k="Speak">Speak</button><button data-k="Error">Error</button>
+<span>Events</span><button data-k="Run task">Run a task</button><button data-k="Notify">Notification</button><button data-k="Spawn">Spawn subagent</button>
+<span>Show</span><button id="bw">Widgets board</button><button id="bt">Replay tray pill</button><span>Annotations</span><button data-an="pyth">Explain Pythagoras</button><button data-an="blender">Blender: how do I render?</button><button data-an="clear">Close</button></div><div class="top"><span style="margin-left:0">Say to Aegis</span><button data-k="say:What's the time?">What's the time?</button><button data-k="say:What's the date?">What's the date?</button><button data-k="say:Play the song">Play the song</button><button data-k="say:What's my flight?">What's my flight?</button><button data-k="say:GPU usage?">GPU usage?</button><button data-k="say:Which devices are connected?">Which devices are connected?</button><button data-k="say:Stock price?">Stock price?</button><button data-k="say:How's the weather?">How's the weather?</button><button data-k="say:Show my subagents">Show my subagents</button><button data-k="say:Bitcoin price">Bitcoin price</button><button data-k="say:Time in Tokyo">Time in Tokyo</button><button data-k="say:Add task call the bank">Add task call the bank</button><button data-k="say:Start focus">Start focus</button><button data-k="say:Open Aegis">Open Aegis</button><button data-k="say:Show me the widgets">Show me the widgets</button></div>
+<div class="fitw" id="fitw"><div class="desk" id="desk">
+<iframe id="f-annot" title="Annotations" srcdoc="{{annotations}}"></iframe>
+<iframe id="f-widgets" title="Widgets" srcdoc="{{widgets}}"></iframe>
+<iframe id="f-notch" title="Notch" srcdoc="{{notch}}"></iframe>
+<iframe id="f-overlay" title="Mascot overlay" srcdoc="{{overlay}}"></iframe>
+<iframe id="f-tray" title="Tray pill" srcdoc="{{tray-pill}}"></iframe>
+<div class="bar"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="tray"><span>⌃</span><span class="ic" title="Aegis tray icon"></span><span>ENG</span><span>🔊</span><span id="clk"></span></div>
+</div></div>
+<script>
+const fr=[...document.querySelectorAll('iframe')],desk=document.getElementById('desk'),fw=document.getElementById('fitw');
+const fit=()=>{const s=Math.min(1,(fw.clientWidth-28)/1366);desk.style.transform='scale('+s+')';fw.style.height=(768*s+28)+'px'};fit();addEventListener('resize',fit);
+document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(/^say:.*widgets/i.test(k)){desk.classList.add('w');document.getElementById('bw').classList.add('on')}fr.forEach(f=>f.contentWindow.postMessage(k,'*'))});
+document.getElementById('bw').onclick=e=>{desk.classList.toggle('w');e.target.classList.toggle('on')};
+const an=document.getElementById('f-annot');document.querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>{const k=b.dataset.an;desk.classList.toggle('an',k!=='clear');desk.classList.remove('w');an.contentWindow.postMessage('annot:'+k,'*')});
+const tray=document.getElementById('f-tray'),src=tray.getAttribute('srcdoc');document.getElementById('bt').onclick=()=>{tray.srcdoc=src};
+const ck=()=>document.getElementById('clk').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});ck();setInterval(ck,20000);
+</script></body></html>

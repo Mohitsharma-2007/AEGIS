@@ -1,0 +1,12 @@
+{
+  "name": "aegis-mascot",
+  "version": "1.3.0",
+  "description": "Aegi — the animated Aegis mascot (16 states, 9 themes, 6 shapes) plus the Aegis UI sound set. Zero dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js", "./mascot": "./src/mascot.js", "./sounds": "./src/sounds.js", "./widgets": "./src/widgets.js", "./tray/*": "./tray/*", "./svg/*": "./svg/*", "./sounds/*": "./sounds/*" },
+  "types": "src/index.d.ts",
+  "files": ["src", "svg", "sounds", "tray", "manifest.json", "MASCOT.md", "SOUNDS.md", "INTEGRATION.md"],
+  "scripts": { "build": "node tools/build.mjs" },
+  "license": "MIT"
+}
